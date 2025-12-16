@@ -283,7 +283,7 @@ export default function MyBankPage() {
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel>Choose withdrawal method</FormLabel>
-                            <Select onValueChange={(value: 'wallet' | 'bank') => {
+                             <Select onValueChange={(value: 'wallet' | 'bank') => {
                                 field.onChange(value);
                                 setWithdrawalMethod(value);
                                 withdrawForm.setValue('bankName', '');
