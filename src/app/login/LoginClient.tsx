@@ -9,6 +9,8 @@ import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { Landmark } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 
+const ADMIN_EMAIL = "salmankhaskheli885@gmail.com";
+
 export function LoginClient() {
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
@@ -16,7 +18,11 @@ export function LoginClient() {
 
   useEffect(() => {
     if (!isUserLoading && user) {
-      router.push('/');
+      if (user.email === ADMIN_EMAIL) {
+        router.push('/admin');
+      } else {
+        router.push('/');
+      }
     }
   }, [user, isUserLoading, router]);
 
@@ -24,8 +30,13 @@ export function LoginClient() {
     if (auth) {
       const provider = new GoogleAuthProvider();
       try {
-        await signInWithPopup(auth, provider);
-        router.push('/');
+        const result = await signInWithPopup(auth, provider);
+        const signedInUser = result.user;
+        if (signedInUser.email === ADMIN_EMAIL) {
+          router.push('/admin');
+        } else {
+          router.push('/');
+        }
       } catch (error) {
         console.error("Error signing in with Google", error);
       }

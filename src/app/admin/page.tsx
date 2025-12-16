@@ -4,7 +4,7 @@ import { useUser } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-const ADMIN_EMAIL = "admin@example.com"; // IMPORTANT: Replace with your actual admin email
+const ADMIN_EMAIL = "salmankhaskheli885@gmail.com"; // IMPORTANT: Replace with your actual admin email
 
 export default function AdminPage() {
   const { user, isUserLoading } = useUser();

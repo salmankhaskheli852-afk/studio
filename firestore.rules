@@ -23,9 +23,9 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // IMPORTANT: Replace "admin@example.com" with the actual admin's email address.
+    // IMPORTANT: Replace "salmankhaskheli885@gmail.com" with the actual admin's email address.
     function isAdmin() {
-      return isSignedIn() && request.auth.token.email == "admin@example.com";
+      return isSignedIn() && request.auth.token.email == "salmankhaskheli885@gmail.com";
     }
     
     // For update/delete, ensures the document exists AND the user is the owner.

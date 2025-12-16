@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Home,
   TrendingUp,
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useUser, useAuth } from '@/firebase';
 import {
   Avatar,
@@ -39,13 +39,24 @@ const allNavItems = [
   { href: '/admin', label: 'Admin', icon: Shield, adminOnly: true },
 ];
 
-const ADMIN_EMAIL = "admin@example.com"; // IMPORTANT: Replace with your actual admin email
+const ADMIN_EMAIL = "salmankhaskheli885@gmail.com";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isSheetOpen, setSheetOpen] = useState(false);
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
+  
+  const isAdmin = useMemo(() => user?.email === ADMIN_EMAIL, [user]);
+
+  useEffect(() => {
+    if (!isUserLoading && user) {
+        if (isAdmin && pathname !== '/admin') {
+            router.replace('/admin');
+        }
+    }
+  }, [user, isUserLoading, isAdmin, pathname, router]);
 
   const handleLogout = () => {
     if (auth) {
@@ -54,12 +65,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   const navItems = useMemo(() => {
-    const isAdmin = user?.email === ADMIN_EMAIL;
     if (isAdmin) {
       return allNavItems.filter(item => item.adminOnly);
     }
     return allNavItems.filter(item => !item.adminOnly);
-  }, [user]);
+  }, [isAdmin]);
 
   const NavContent = () => (
     <nav className="flex flex-col gap-4">
