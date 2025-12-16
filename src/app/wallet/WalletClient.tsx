@@ -12,14 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { Transaction } from "@/lib/data";
-import { Landmark, Upload } from "lucide-react";
+import { Landmark } from "lucide-react";
 
 const depositSchema = z.object({
   accountHolder: z.string().min(2, "Name is too short"),
   accountNumber: z.string().regex(/^(03\d{9})$/, "Enter a valid 11-digit number like 03001234567"),
   amount: z.coerce.number().min(100, "Minimum deposit is 100 PKR"),
   tid: z.string().min(5, "Transaction ID is required"),
-  screenshot: z.any().refine((files) => files?.length == 1, "Screenshot is required."),
 });
 
 const withdrawSchema = z.object({
@@ -74,8 +73,6 @@ export function WalletClient({ transactions, adminWallets }: WalletClientProps) 
     }
   };
 
-  const screenshotRef = depositForm.register("screenshot");
-
   return (
     <div className="space-y-6">
       <header>
@@ -122,30 +119,6 @@ export function WalletClient({ transactions, adminWallets }: WalletClientProps) 
                       <FormField control={depositForm.control} name="accountNumber" render={({ field }) => ( <FormItem> <FormLabel>Your Account Number</FormLabel> <FormControl> <Input placeholder="e.g. 03001234567" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
                       <FormField control={depositForm.control} name="amount" render={({ field }) => ( <FormItem> <FormLabel>Amount (PKR)</FormLabel> <FormControl> <Input type="number" placeholder="1000" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
                       <FormField control={depositForm.control} name="tid" render={({ field }) => ( <FormItem> <FormLabel>Transaction ID (TID)</FormLabel> <FormControl> <Input placeholder="Enter the TID from your payment app" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                      <FormField
-                        control={depositForm.control}
-                        name="screenshot"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Payment Screenshot</FormLabel>
-                            <FormControl>
-                              <label className="flex items-center gap-2 cursor-pointer justify-center w-full p-4 border-2 border-dashed rounded-md hover:border-primary">
-                                <Upload className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm text-muted-foreground">
-                                  {field.value?.[0]?.name ? field.value[0].name : "Upload a file"}
-                                </span>
-                                <Input
-                                  {...screenshotRef}
-                                  type="file"
-                                  className="hidden"
-                                  accept="image/*"
-                                />
-                              </label>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
                       <Button type="submit" className="w-full">Submit Deposit</Button>
                     </form>
                   </Form>
