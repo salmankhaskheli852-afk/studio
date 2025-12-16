@@ -1,19 +1,40 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Home, TrendingUp, Users, Menu, Landmark, LogOut, User as UserIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState } from "react";
-import { useUser, useAuth } from "@/firebase";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  Home,
+  TrendingUp,
+  Users,
+  Menu,
+  Landmark,
+  LogOut,
+  User as UserIcon,
+  Banknote,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useState } from 'react';
+import { useUser, useAuth } from '@/firebase';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const navItems = [
-  { href: "/", label: "Home", icon: Home },
-  { href: "/invest", label: "Invest", icon: TrendingUp },
-  { href: "/invite", label: "Invite", icon: Users },
+  { href: '/', label: 'Home', icon: Home },
+  { href: '/invest', label: 'Invest', icon: TrendingUp },
+  { href: '/invite', label: 'Invite', icon: Users },
+  { href: '/my-bank', label: 'My Bank', icon: Banknote },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -30,7 +51,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const NavContent = () => (
     <nav className="flex flex-col gap-4">
-      <Link href="/" className="flex items-center gap-2 text-lg font-semibold" onClick={() => setSheetOpen(false)}>
+      <Link
+        href="/"
+        className="flex items-center gap-2 text-lg font-semibold"
+        onClick={() => setSheetOpen(false)}
+      >
         <Landmark className="h-6 w-6 text-primary" />
         <span className="font-headline">InvestPro</span>
       </Link>
@@ -41,8 +66,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           onClick={() => setSheetOpen(false)}
           className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary ${
             pathname === item.href
-              ? "bg-muted text-primary"
-              : "text-muted-foreground"
+              ? 'bg-muted text-primary'
+              : 'text-muted-foreground'
           }`}
         >
           <item.icon className="h-4 w-4" />
@@ -63,7 +88,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="flex h-14 items-center gap-4 border-b bg-card px-4 lg:h-[60px] lg:px-6">
           <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="shrink-0 md:hidden">
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0 md:hidden"
+              >
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
@@ -74,8 +103,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </Sheet>
           <div className="flex w-full items-center justify-between">
             <div className="flex items-center gap-2 text-lg font-semibold md:hidden">
-                <Landmark className="h-6 w-6 text-primary" />
-                <span className="font-headline">InvestPro</span>
+              <Landmark className="h-6 w-6 text-primary" />
+              <span className="font-headline">InvestPro</span>
             </div>
             <div className="w-full flex-1" />
             {isUserLoading ? (
@@ -83,10 +112,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             ) : user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="secondary" size="icon" className="rounded-full">
+                  <Button
+                    variant="secondary"
+                    size="icon"
+                    className="rounded-full"
+                  >
                     <Avatar>
-                      <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? ''} />
-                      <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>
+                      <AvatarImage
+                        src={user.photoURL ?? ''}
+                        alt={user.displayName ?? ''}
+                      />
+                      <AvatarFallback>
+                        {user.displayName?.charAt(0)}
+                      </AvatarFallback>
                     </Avatar>
                     <span className="sr-only">Toggle user menu</span>
                   </Button>
@@ -96,8 +134,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link href="/profile">
-                        <UserIcon className="mr-2 h-4 w-4" />
-                        <span>Profile</span>
+                      <UserIcon className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout}>
