@@ -29,18 +29,16 @@ export default function WithdrawalRequestsPage() {
         if (!firestore) return;
         setIsLoading(true);
         try {
-            const transactionsQuery = query(
-                collectionGroup(firestore, 'transactions'), 
-                where('type', '==', 'Withdrawal')
-            );
+            // Query all transactions to avoid needing an index
+            const transactionsQuery = query(collectionGroup(firestore, 'transactions'));
             const querySnapshot = await getDocs(transactionsQuery);
             const fetchedRequests: WithdrawalRequest[] = [];
 
             for (const transactionDoc of querySnapshot.docs) {
                 const data = transactionDoc.data() as any;
 
-                // Filter for pending requests on the client
-                if (data.status !== 'Pending') {
+                // Filter for pending WITHDRAWAL requests on the client
+                if (data.type !== 'Withdrawal' || data.status !== 'Pending') {
                     continue;
                 }
 

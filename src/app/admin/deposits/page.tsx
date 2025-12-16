@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useFirestore } from "@/firebase/provider";
-import { collectionGroup, query, where, getDocs, doc, writeBatch, increment, getDoc } from "firebase/firestore";
+import { collectionGroup, query, getDocs, doc, writeBatch, increment, getDoc } from "firebase/firestore";
 import type { Transaction } from "@/lib/data";
 import { useToast } from '@/hooks/use-toast';
 
@@ -30,10 +30,8 @@ export default function DepositRequestsPage() {
         if (!firestore) return;
         setIsLoading(true);
         try {
-            const transactionsQuery = query(
-                collectionGroup(firestore, 'transactions'), 
-                where('type', '==', 'Deposit')
-            );
+            // Query all transactions without filters to avoid needing an index
+            const transactionsQuery = query(collectionGroup(firestore, 'transactions'));
             const querySnapshot = await getDocs(transactionsQuery);
 
             const fetchedRequests: TransactionWithUserDetails[] = [];
@@ -41,8 +39,8 @@ export default function DepositRequestsPage() {
             for (const transactionDoc of querySnapshot.docs) {
                 const data = transactionDoc.data() as Transaction;
                 
-                // Filter for pending requests on the client side
-                if (data.status !== 'Pending') {
+                // Filter for pending DEPOSIT requests on the client side
+                if (data.type !== 'Deposit' || data.status !== 'Pending') {
                     continue;
                 }
 
@@ -68,9 +66,9 @@ export default function DepositRequestsPage() {
                     userDisplayName,
                     userEmail,
                     transactionPath: transactionDoc.ref.path,
-                    accountHolderName: data.accountHolderName,
-                    accountNumber: data.accountNumber,
-                    transactionId: data.transactionId
+                    accountHolderName: (data as any).accountHolderName,
+                    accountNumber: (data as any).accountNumber,
+                    transactionId: (data as any).transactionId
                 });
             }
             setRequests(fetchedRequests);
