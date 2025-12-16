@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,8 @@ import { Badge } from "@/components/ui/badge";
 import type { Transaction } from "@/lib/data";
 import { useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { useFirestore } from '@/firebase/provider';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { collection, query, orderBy, limit, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 const depositSchema = z.object({
   accountHolder: z.string().min(2, "Name is too short"),
@@ -72,6 +74,7 @@ export default function MyBankPage() {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const { user } = useUser();
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const transactionsQuery = useMemoFirebase(
     () => user ? query(collection(firestore, `users/${user.uid}/wallet/${user.uid}/transactions`), orderBy('timestamp', 'desc'), limit(15)) : null,
@@ -100,9 +103,39 @@ export default function MyBankPage() {
     },
   });
 
-  function onDepositSubmit(values: z.infer<typeof depositSchema>) {
-    console.log(values);
-    // Handle deposit logic
+  async function onDepositSubmit(values: z.infer<typeof depositSchema>) {
+    if (!user || !firestore) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "You must be logged in to make a deposit.",
+      });
+      return;
+    }
+
+    try {
+      const transactionsColRef = collection(firestore, `users/${user.uid}/wallet/${user.uid}/transactions`);
+      await addDoc(transactionsColRef, {
+        ...values,
+        type: 'Deposit',
+        status: 'Pending',
+        timestamp: serverTimestamp(),
+        walletId: user.uid,
+      });
+
+      toast({
+        title: "Deposit Submitted",
+        description: "Your deposit request has been submitted and is pending approval.",
+      });
+      depositForm.reset();
+    } catch (error) {
+      console.error("Error submitting deposit:", error);
+      toast({
+        variant: "destructive",
+        title: "Submission Failed",
+        description: "An error occurred while submitting your deposit. Please try again.",
+      });
+    }
   }
 
   function onBankSubmit(values: z.infer<typeof bankAccountSchema>) {
@@ -362,7 +395,7 @@ export default function MyBankPage() {
                         ) : transactions && transactions.length > 0 ? (
                             transactions.map((transaction) => (
                                 <TableRow key={transaction.id}>
-                                <TableCell>{transaction.timestamp ? new Date((transaction.timestamp as any).seconds * 1000).toLocaleDateString() : 'N/A'}</TableCell>
+                                <TableCell>{transaction.timestamp && (transaction.timestamp as any).seconds ? new Date((transaction.timestamp as any).seconds * 1000).toLocaleDateString() : 'N/A'}</TableCell>
                                 <TableCell>{transaction.type}</TableCell>
                                 <TableCell>
                                     <Badge variant={getStatusBadgeVariant(transaction.status)}>{transaction.status}</Badge>
@@ -382,3 +415,5 @@ export default function MyBankPage() {
     </div>
   );
 }
+
+    
