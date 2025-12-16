@@ -1,0 +1,106 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict user-ownership model where all user-specific data is private and can only be accessed by the authenticated owner. Global configuration data (like investment plans) is public to read but write-protected.
+ * Data Structure: All user data is nested under /users/{userId}, including their profile, wallet, and transactions. This path-based nesting is the primary security mechanism. Public data, such as /investment_plans and /admin_wallet_details, exists at the root level.
+ * Key Security Decisions:
+ *   - Users are strictly isolated and cannot read or write any data outside their own /users/{userId} document tree.
+ *   - Listing users from the root /users collection is explicitly disallowed for security and privacy.
+ *   - Collections like `investment_plans` and `admin_wallet_details` are publicly readable to allow the client app to function, but all write operations are disabled pending the implementation of a proper admin role system.
+ * Denormalization for Authorization: The rules rely on the path structure `/users/{userId}/...` for authorization, which avoids costly `get()` calls to check ownership on nested documents like wallets or transactions. On document creation, the rules validate that internal IDs (e.g., a `userId` field) match the document's path to ensure relational integrity.
+ * Structural Segregation: User-private data (`/users/{userId/...}`) is kept in a separate hierarchy from globally-public data (`/investment_plans`), which simplifies security and makes list operations safe and performant.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for reusable logic
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Checks if the currently signed-in user's UID matches the given userId from the path.
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // For update/delete, ensures the document exists AND the user is the owner.
+    // This prevents modifying non-existent data and provides a single, robust check.
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Manages user profile documents. Users can create and manage their own profile.
+     * @path /users/{userId}
+     * @allow A new user (auth.uid: 'user123') can (create) their own profile at `/users/user123`.
+     * @deny A user (auth.uid: 'user123') cannot (get) another user's profile at `/users/user456`.
+     * @principle Enforces self-creation and ownership. A user can only manage their own profile, and user listing is disabled.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Secures a user's wallet documents. A user has full control over their own wallets.
+     * @path /users/{userId}/wallets/{walletId}
+     * @allow The user 'user123' can (get) their own wallet document at `/users/user123/wallets/w_abc`.
+     * @deny The user 'user456' cannot (create) a wallet for 'user123' at `/users/user123/wallets/w_xyz`.
+     * @principle Restricts access to a user's own data tree using path-based ownership.
+     */
+    match /users/{userId}/wallets/{walletId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Secures a user's transaction history within a specific wallet.
+     * @path /users/{userId}/wallets/{walletId}/transactions/{transactionId}
+     * @allow The user 'user123' can (create) a new transaction at `/users/user123/wallets/w_abc/transactions/t_123`.
+     * @deny The user 'user456' cannot (list) transactions at `/users/user123/wallets/w_abc/transactions`.
+     * @principle Inherits ownership from the path, ensuring only the user can manage their financial records.
+     */
+    match /users/{userId}/wallets/{walletId}/transactions/{transactionId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.walletId == walletId;
+      allow update: if isExistingOwner(userId) && request.resource.data.walletId == resource.data.walletId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Manages investment plans, which are public to all users for reading.
+     * @path /investment_plans/{investmentPlanId}
+     * @allow Any user, even unauthenticated, can (list) or (get) all investment plans.
+     * @deny Any authenticated user without admin rights cannot (create) a new investment plan.
+     * @principle Public Read with Admin-Only Writes. As no admin role is defined, writes are disabled for maximum security.
+     */
+    match /investment_plans/{investmentPlanId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false; // TODO: Implement an admin role check for authorized users only.
+      allow update: if false; // TODO: Implement an admin role check for authorized users only.
+      allow delete: if false; // TODO: Implement an admin role check for authorized users only.
+    }
+
+    /**
+     * @description Manages admin wallet details for user deposits. This data is public for viewing.
+     * @path /admin_wallet_details/{adminWalletDetailId}
+     * @allow Any user can (get) the admin's wallet details to make a deposit.
+     * @deny An authenticated user cannot (update) the admin's account number.
+     * @principle Public Read with Admin-Only Writes. Secures critical financial information from modification by unauthorized users.
+     */
+    match /admin_wallet_details/{adminWalletDetailId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false; // TODO: Implement an admin role check for authorized users only.
+      allow update: if false; // TODO: Implement an admin role check for authorized users only.
+      allow delete: if false; // TODO: Implement an admin role check for authorized users only.
+    }
+  }
+}

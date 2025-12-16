@@ -1,0 +1,267 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the InvestPro Wallet application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "googleId": {
+          "type": "string",
+          "description": "The unique identifier for the user provided by Google."
+        },
+        "referralCode": {
+          "type": "string",
+          "description": "The unique referral code for the user."
+        }
+      },
+      "required": [
+        "id",
+        "googleId",
+        "referralCode"
+      ]
+    },
+    "Wallet": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Wallet",
+      "type": "object",
+      "description": "Represents a user's wallet within the InvestPro Wallet application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the wallet."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:1 Wallet)"
+        },
+        "balance": {
+          "type": "number",
+          "description": "The current balance of the wallet."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "balance"
+      ]
+    },
+    "Transaction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Transaction",
+      "type": "object",
+      "description": "Represents a transaction (deposit or withdrawal) in the InvestPro Wallet application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the transaction."
+        },
+        "walletId": {
+          "type": "string",
+          "description": "Reference to Wallet. (Relationship: Wallet 1:N Transaction)"
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of transaction (deposit or withdrawal)."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount of the transaction."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The timestamp of the transaction.",
+          "format": "date-time"
+        },
+        "accountHolderName": {
+          "type": "string",
+          "description": "Account holder name for deposit verification"
+        },
+        "accountNumber": {
+          "type": "string",
+          "description": "Account number for deposit or withdrawal."
+        },
+        "transactionId": {
+          "type": "string",
+          "description": "Transaction ID provided by the payment gateway (e.g., JazzCash, Easypaisa)."
+        },
+        "screenshotUrl": {
+          "type": "string",
+          "description": "URL of the screenshot for deposit verification.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "walletId",
+        "type",
+        "amount",
+        "timestamp"
+      ]
+    },
+    "InvestmentPlan": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "InvestmentPlan",
+      "type": "object",
+      "description": "Represents an investment plan available in the InvestPro Wallet application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the investment plan."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the investment plan."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the investment plan."
+        },
+        "minimumInvestment": {
+          "type": "number",
+          "description": "The minimum amount required to invest in this plan."
+        },
+        "returnPercentage": {
+          "type": "number",
+          "description": "The percentage of return for this investment plan."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "minimumInvestment",
+        "returnPercentage"
+      ]
+    },
+    "AdminWalletDetail": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AdminWalletDetail",
+      "type": "object",
+      "description": "Represents the admin wallet details for deposits.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the admin wallet detail."
+        },
+        "walletName": {
+          "type": "string",
+          "description": "Name of the admin wallet."
+        },
+        "accountNumber": {
+          "type": "string",
+          "description": "Admin wallet account number."
+        },
+        "accountHolderName": {
+          "type": "string",
+          "description": "Admin wallet account holder name."
+        }
+      },
+      "required": [
+        "id",
+        "walletName",
+        "accountNumber",
+        "accountHolderName"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles.  `userId` is `request.auth.uid`.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, matching their Firebase Auth UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/wallet",
+        "definition": {
+          "entityName": "Wallet",
+          "schema": {
+            "$ref": "#/backend/entities/Wallet"
+          },
+          "description": "Stores the wallet information for each user. Path-based ownership enforces security.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, matching their Firebase Auth UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/wallet/transactions/{transactionId}",
+        "definition": {
+          "entityName": "Transaction",
+          "schema": {
+            "$ref": "#/backend/entities/Transaction"
+          },
+          "description": "Stores transaction history for each user's wallet. Path-based ownership enforces security.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, matching their Firebase Auth UID."
+            },
+            {
+              "name": "transactionId",
+              "description": "The unique identifier of the transaction."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/investment_plans/{investmentPlanId}",
+        "definition": {
+          "entityName": "InvestmentPlan",
+          "schema": {
+            "$ref": "#/backend/entities/InvestmentPlan"
+          },
+          "description": "Stores the available investment plans. Write access should be restricted to authorized roles.",
+          "params": [
+            {
+              "name": "investmentPlanId",
+              "description": "The unique identifier of the investment plan."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/admin_wallet_details/{adminWalletDetailId}",
+        "definition": {
+          "entityName": "AdminWalletDetail",
+          "schema": {
+            "$ref": "#/backend/entities/AdminWalletDetail"
+          },
+          "description": "Stores admin wallet details for deposit verification.  Write access should be restricted to authorized roles.",
+          "params": [
+            {
+              "name": "adminWalletDetailId",
+              "description": "The unique identifier of the admin wallet detail."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to ensure authorization independence, clarity, and scalability for the InvestPro Wallet application. It leverages path-based ownership for user-specific data and structural segregation to maintain a homogeneous security posture within each collection. Denormalization is employed to avoid `get()` calls in security rules and ensure atomic operations.\n\n*   **Users:** Each user has their own document in the `/users` collection. This allows for simple, path-based security rules that restrict access to a user's data only to themselves.\n*   **Wallets:** Each user has a single associated wallet stored in `/users/{userId}/wallet`. Path-based ownership ensures only the user can access their wallet.\n*   **Transactions:** Each wallet has multiple transactions, stored in `/users/{userId}/wallet/transactions/{transactionId}`. Again, path-based ownership ensures only the user can access their transactions.\n*   **Investment Plans:** Investment plans are stored in a root-level `/investment_plans` collection. These plans are globally accessible but writes are restricted to authorized roles (e.g., admins, not modeled here).\n*   **Admin Wallet Details:** These are stored in the root-level `/admin_wallet_details` collection. Read access can be controlled, and write access can be limited to admins (roles are not modeled, but an example is provided).\n\nAuthorization Independence is achieved primarily through path-based ownership. For example, to access a user's transactions, we don't need to `get()` the wallet to verify ownership; the path `/users/{userId}/wallet/transactions/{transactionId}` inherently enforces this. This eliminates hierarchical authorization dependencies.\n\nQAPs (Rules are not Filters) are supported by the structural segregation. For example, listing transactions is always scoped to a specific user's wallet due to the path structure. This ensures that list operations are secure and efficient without complex filtering in the rules."
+  }
+}
