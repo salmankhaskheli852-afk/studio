@@ -36,7 +36,7 @@ export const investmentPlans: InvestmentPlan[] = [
 
 export type Transaction = {
   id: string;
-  timestamp: string | Date; // Allow Date object
+  timestamp: string | Date | { seconds: number, nanoseconds: number }; // Allow Date object & Firestore Timestamp
   type: "Deposit" | "Withdrawal" | "Investment";
   amount: number;
   status: "Pending" | "Completed" | "Failed";

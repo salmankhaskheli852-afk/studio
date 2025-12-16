@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useUser, useCollection, useMemoFirebase } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
 import { collection, query, where, Timestamp, orderBy } from "firebase/firestore";
-import { MoreHorizontal, User, Mail, ShieldCheck } from "lucide-react";
+import { MoreHorizontal, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -138,7 +138,12 @@ export function AdminClient() {
                     {u.isAdmin ? <span className="flex items-center gap-2 text-primary font-semibold"><ShieldCheck className="h-4 w-4"/> Admin</span> : "User"}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Dialog open={isModalOpen && selectedUser?.id === u.id} onOpenChange={setIsModalOpen}>
+                    <Dialog open={isModalOpen && selectedUser?.id === u.id} onOpenChange={(isOpen) => {
+                      setIsModalOpen(isOpen);
+                      if (!isOpen) {
+                        setSelectedUser(null);
+                      }
+                    }}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
@@ -179,9 +184,9 @@ export function AdminClient() {
                                 <TableBody>
                                     {selectedUser.transactions.length > 0 ? selectedUser.transactions.map(t => (
                                         <TableRow key={t.id}>
-                                            <TableCell>{new Date(t.timestamp).toLocaleDateString()}</TableCell>
+                                            <TableCell>{t.timestamp instanceof Date ? t.timestamp.toLocaleDateString() : new Date(t.timestamp).toLocaleDateString()}</TableCell>
                                             <TableCell>{t.type}</TableCell>
-                                            <TableCell className={`${t.amount > 0 ? 'text-green-500' : 'text-red-500'}`}>{t.amount.toLocaleString()}</TableCell>
+                                            <TableCell className={`${t.amount > 0 ? 'text-emerald-500' : 'text-red-500'}`}>{t.amount.toLocaleString()}</TableCell>
                                         </TableRow>
                                     )) : <TableRow><TableCell colSpan={3} className="text-center">No transactions in the last 7 days.</TableCell></TableRow>}
                                 </TableBody>
