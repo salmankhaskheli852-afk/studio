@@ -23,6 +23,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from 'react';
+import { adminWallets } from "@/lib/data";
+import { Landmark } from 'lucide-react';
 
 const depositSchema = z.object({
   accountHolder: z.string().min(2, "Name is too short"),
@@ -105,71 +107,93 @@ export default function MyBankPage() {
             <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
             </TabsList>
             <TabsContent value="recharge">
-            <Card>
-                <CardHeader>
-                <CardTitle>Deposit Funds</CardTitle>
-                <CardDescription>Fill the form after sending payment.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                <Form {...depositForm}>
-                    <form onSubmit={depositForm.handleSubmit(onDepositSubmit)} className="space-y-4">
-                    <FormField
-                      control={depositForm.control}
-                      name="accountHolder"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Your Account Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g. John Doe" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={depositForm.control}
-                      name="accountNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Your Account Number</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g. 03001234567" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={depositForm.control}
-                      name="amount"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Amount (PKR)</FormLabel>
-                          <FormControl>
-                            <Input type="number" placeholder="1000" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={depositForm.control}
-                      name="transactionId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Transaction ID (TID)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter the TID from your payment app" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" className="w-full">Submit Deposit</Button>
-                    </form>
-                </Form>
-                </CardContent>
-            </Card>
+            <div className="grid gap-8 lg:grid-cols-5">
+              <div className="lg:col-span-2 space-y-4">
+                  <h2 className="text-xl font-semibold font-headline">Admin Wallets</h2>
+                  <p className="text-sm text-muted-foreground">Please send your deposit amount to one of the following accounts.</p>
+                  {adminWallets.map(wallet => (
+                    <Card key={wallet.name}>
+                        <CardHeader className="flex flex-row items-center gap-4 space-y-0">
+                            <Landmark className="w-8 h-8 text-primary"/>
+                            <div className="grid gap-1">
+                                <CardTitle>{wallet.name}</CardTitle>
+                                <CardDescription>{wallet.accountName}</CardDescription>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-lg font-mono tracking-wider">{wallet.accountNumber}</p>
+                        </CardContent>
+                    </Card>
+                  ))}
+              </div>
+              <div className="lg:col-span-3">
+                <Card>
+                    <CardHeader>
+                    <CardTitle>Deposit Funds</CardTitle>
+                    <CardDescription>Fill the form after sending payment.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                    <Form {...depositForm}>
+                        <form onSubmit={depositForm.handleSubmit(onDepositSubmit)} className="space-y-4">
+                        <FormField
+                          control={depositForm.control}
+                          name="accountHolder"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Your Account Name</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g. John Doe" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={depositForm.control}
+                          name="accountNumber"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Your Account Number</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g. 03001234567" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={depositForm.control}
+                          name="amount"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Amount (PKR)</FormLabel>
+                              <FormControl>
+                                <Input type="number" placeholder="1000" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={depositForm.control}
+                          name="transactionId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Transaction ID (TID)</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter the TID from your payment app" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button type="submit" className="w-full">Submit Deposit</Button>
+                        </form>
+                    </Form>
+                    </CardContent>
+                </Card>
+              </div>
+            </div>
             </TabsContent>
             <TabsContent value="withdraw">
             <Card>
