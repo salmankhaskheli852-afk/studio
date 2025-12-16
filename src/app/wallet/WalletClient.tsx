@@ -74,7 +74,7 @@ export function WalletClient({ transactions, adminWallets }: WalletClientProps) 
     }
   };
 
-  const screenshotRef = depositForm.watch("screenshot");
+  const screenshotRef = depositForm.register("screenshot");
 
   return (
     <div className="space-y-6">
@@ -122,7 +122,15 @@ export function WalletClient({ transactions, adminWallets }: WalletClientProps) 
                       <FormField control={depositForm.control} name="accountNumber" render={({ field }) => ( <FormItem> <FormLabel>Your Account Number</FormLabel> <FormControl> <Input placeholder="e.g. 03001234567" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
                       <FormField control={depositForm.control} name="amount" render={({ field }) => ( <FormItem> <FormLabel>Amount (PKR)</FormLabel> <FormControl> <Input type="number" placeholder="1000" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
                       <FormField control={depositForm.control} name="tid" render={({ field }) => ( <FormItem> <FormLabel>Transaction ID (TID)</FormLabel> <FormControl> <Input placeholder="Enter the TID from your payment app" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                      <FormField control={depositForm.control} name="screenshot" render={({ field: { onChange, ...rest } }) => ( <FormItem> <FormLabel>Payment Screenshot</FormLabel> <FormControl> <label className="flex items-center gap-2 cursor-pointer justify-center w-full p-4 border-2 border-dashed rounded-md hover:border-primary"> <Upload className="h-4 w-4 text-muted-foreground" /> <span className="text-sm text-muted-foreground"> {screenshotRef?.[0]?.name ? screenshotRef[0].name : "Upload a file"} </span> <Input {...rest} type="file" className="hidden" accept="image/*" onChange={(e) => onChange(e.target.files)} /> </label> </FormControl> <FormMessage /> </FormItem> )} />
+                      <FormField control={depositForm.control} name="screenshot" render={({ field }) => ( <FormItem> <FormLabel>Payment Screenshot</FormLabel> <FormControl>
+                          <label className="flex items-center gap-2 cursor-pointer justify-center w-full p-4 border-2 border-dashed rounded-md hover:border-primary">
+                            <Upload className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
+                              {field.value?.[0]?.name ? field.value[0].name : "Upload a file"}
+                            </span>
+                            <Input {...screenshotRef} type="file" className="hidden" accept="image/*" />
+                          </label>
+                        </FormControl> <FormMessage /> </FormItem> )} />
                       <Button type="submit" className="w-full">Submit Deposit</Button>
                     </form>
                   </Form>
