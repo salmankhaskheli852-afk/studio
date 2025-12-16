@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useFirestore } from "@/firebase/provider";
-import { collectionGroup, query, where, getDocs, doc, writeBatch, increment } from "firebase/firestore";
+import { collectionGroup, query, where, getDocs, doc, writeBatch, increment, getDoc } from "firebase/firestore";
 import type { Transaction } from "@/lib/data";
 import { useToast } from '@/hooks/use-toast';
 
@@ -31,23 +31,30 @@ export default function WithdrawalRequestsPage() {
         try {
             const transactionsQuery = query(
                 collectionGroup(firestore, 'transactions'), 
-                where('type', '==', 'Withdrawal'),
-                where('status', '==', 'Pending')
+                where('type', '==', 'Withdrawal')
             );
             const querySnapshot = await getDocs(transactionsQuery);
             const fetchedRequests: WithdrawalRequest[] = [];
 
             for (const transactionDoc of querySnapshot.docs) {
                 const data = transactionDoc.data() as any;
+
+                // Filter for pending requests on the client
+                if (data.status !== 'Pending') {
+                    continue;
+                }
+
                 const userId = transactionDoc.ref.path.split('/')[1];
 
-                const userDoc = await getDocs(query(collection(firestore, 'users'), where('id', '==', userId)));
+                const userDocRef = doc(firestore, 'users', userId);
+                const userDocSnap = await getDoc(userDocRef);
+
                 let userDisplayName = 'Unknown User';
                 let userEmail = 'N/A';
-                if (!userDoc.empty) {
-                    const userData = userDoc.docs[0].data();
-                    userDisplayName = userData.displayName;
-                    userEmail = userData.email;
+                if (userDocSnap.exists()) {
+                    const userData = userDocSnap.data();
+                    userDisplayName = userData.displayName || 'Unknown User';
+                    userEmail = userData.email || 'N/A';
                 }
 
                 fetchedRequests.push({

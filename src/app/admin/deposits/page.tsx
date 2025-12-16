@@ -1,13 +1,12 @@
 
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useFirestore } from "@/firebase/provider";
-import { collectionGroup, query, where, getDocs, doc, writeBatch, increment } from "firebase/firestore";
+import { collectionGroup, query, where, getDocs, doc, writeBatch, increment, getDoc } from "firebase/firestore";
 import type { Transaction } from "@/lib/data";
 import { useToast } from '@/hooks/use-toast';
 
@@ -44,15 +43,15 @@ export default function DepositRequestsPage() {
                 const data = transactionDoc.data() as Transaction;
                 const pathParts = transactionDoc.ref.path.split('/');
                 const userId = pathParts[1];
-                const walletId = pathParts[3];
 
                 const userDocRef = doc(firestore, 'users', userId);
-                const userDoc = await getDocs(query(collection(firestore, 'users'), where('id', '==', userId)));
+                const userDoc = await getDoc(userDocRef);
+
 
                 let userDisplayName = 'Unknown User';
                 let userEmail = 'N/A';
-                if (!userDoc.empty) {
-                    const userData = userDoc.docs[0].data();
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
                     userDisplayName = userData.displayName;
                     userEmail = userData.email;
                 }
@@ -175,3 +174,4 @@ export default function DepositRequestsPage() {
         </div>
     );
 }
+
