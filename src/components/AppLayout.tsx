@@ -15,6 +15,7 @@ import {
   LayoutDashboard,
   ArrowDownToDot,
   ArrowUpFromDot,
+  Wallet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -38,8 +39,9 @@ const allNavItems = [
   // User items
   { href: '/', label: 'Home', icon: Home, adminOnly: false },
   { href: '/invest', label: 'Invest', icon: TrendingUp, adminOnly: false },
+  { href: '/wallet', label: 'Wallet', icon: Wallet, adminOnly: false },
+  { href: '/my-bank', label: 'History', icon: Banknote, adminOnly: false },
   { href: '/invite', label: 'Invite', icon: Users, adminOnly: false },
-  { href: '/my-bank', label: 'My Bank', icon: Banknote, adminOnly: false },
   // Admin items
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, adminOnly: true },
   { href: '/admin/deposits', label: 'Deposit Requests', icon: ArrowDownToDot, adminOnly: true },
