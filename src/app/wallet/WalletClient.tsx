@@ -18,7 +18,7 @@ const depositSchema = z.object({
   accountHolder: z.string().min(2, "Name is too short"),
   accountNumber: z.string().regex(/^(03\d{9})$/, "Enter a valid 11-digit number like 03001234567"),
   amount: z.coerce.number().min(100, "Minimum deposit is 100 PKR"),
-  tid: z.string().min(5, "Transaction ID is required"),
+  transactionId: z.string().min(5, "Transaction ID is required"),
 });
 
 const withdrawSchema = z.object({
@@ -39,7 +39,7 @@ export function WalletClient({ transactions, adminWallets }: WalletClientProps) 
     defaultValues: {
       accountHolder: "",
       accountNumber: "",
-      tid: "",
+      transactionId: "",
     }
   });
   const withdrawForm = useForm<z.infer<typeof withdrawSchema>>({
@@ -118,7 +118,7 @@ export function WalletClient({ transactions, adminWallets }: WalletClientProps) 
                       <FormField control={depositForm.control} name="accountHolder" render={({ field }) => ( <FormItem> <FormLabel>Your Account Name</FormLabel> <FormControl> <Input placeholder="e.g. John Doe" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
                       <FormField control={depositForm.control} name="accountNumber" render={({ field }) => ( <FormItem> <FormLabel>Your Account Number</FormLabel> <FormControl> <Input placeholder="e.g. 03001234567" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
                       <FormField control={depositForm.control} name="amount" render={({ field }) => ( <FormItem> <FormLabel>Amount (PKR)</FormLabel> <FormControl> <Input type="number" placeholder="1000" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                      <FormField control={depositForm.control} name="tid" render={({ field }) => ( <FormItem> <FormLabel>Transaction ID (TID)</FormLabel> <FormControl> <Input placeholder="Enter the TID from your payment app" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
+                      <FormField control={depositForm.control} name="transactionId" render={({ field }) => ( <FormItem> <FormLabel>Transaction ID (TID)</FormLabel> <FormControl> <Input placeholder="Enter the TID from your payment app" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
                       <Button type="submit" className="w-full">Submit Deposit</Button>
                     </form>
                   </Form>

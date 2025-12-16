@@ -95,7 +95,8 @@
         "walletId",
         "type",
         "amount",
-        "timestamp"
+        "timestamp",
+        "transactionId"
       ]
     },
     "InvestmentPlan": {

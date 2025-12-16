@@ -11,11 +11,11 @@ export function InviteClient() {
   const referralCode = "REF123XYZ";
   const invitationLink = `https://investpro.app/register?ref=${referralCode}`;
   const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(invitationLink).then(() => {
       setCopied(true);
-      const { toast } = useToast();
       toast({
         title: "Copied!",
         description: "Invitation link copied to clipboard.",
