@@ -1,36 +1,15 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useEffect } from 'react';
-import { adminWallets } from "@/lib/data";
-import { Landmark } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { Transaction } from "@/lib/data";
 import { useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { useFirestore } from '@/firebase/provider';
-import { collection, query, orderBy, limit, addDoc, serverTimestamp, doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, doc, getDoc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
-const depositSchema = z.object({
-  accountHolder: z.string().min(2, "Name is too short"),
-  accountNumber: z.string().regex(/^(03\d{9})$/, "Enter a valid 11-digit number like 03001234567"),
-  amount: z.coerce.number().min(100, "Minimum deposit is 100 PKR"),
-  transactionId: z.string().min(5, "Transaction ID is required"),
-});
 
 export default function MyBankPage() {
   const { user } = useUser();
@@ -76,42 +55,6 @@ export default function MyBankPage() {
     ensureWalletExists();
   }, [user, firestore, walletDocRef, toast]);
 
-  const depositForm = useForm<z.infer<typeof depositSchema>>({
-    resolver: zodResolver(depositSchema),
-    defaultValues: {
-      accountHolder: "",
-      accountNumber: "",
-      amount: 0,
-      transactionId: "",
-    }
-  });
-
-  async function onDepositSubmit(values: z.infer<typeof depositSchema>) {
-    if (!user || !firestore) {
-      toast({ variant: "destructive", title: "Error", description: "You must be logged in to make a deposit." });
-      return;
-    }
-
-    try {
-      const transactionsColRef = collection(firestore, `users/${user.uid}/wallet/${user.uid}/transactions`);
-      await addDoc(transactionsColRef, {
-        walletId: user.uid,
-        type: 'Deposit',
-        status: 'Pending',
-        timestamp: serverTimestamp(),
-        amount: values.amount,
-        accountHolderName: values.accountHolder,
-        accountNumber: values.accountNumber,
-        transactionId: values.transactionId,
-      });
-
-      toast({ title: "Deposit Submitted", description: "Your deposit request has been submitted and is pending approval." });
-      depositForm.reset();
-    } catch (error) {
-      console.error("Error submitting deposit:", error);
-      toast({ variant: "destructive", title: "Submission Failed", description: "An error occurred while submitting your deposit." });
-    }
-  }
 
   const getStatusBadgeVariant = (status?: Transaction["status"]) => {
     switch (status) {
@@ -130,48 +73,10 @@ export default function MyBankPage() {
   return (
     <div className="space-y-6">
        <header>
-          <h1 className="text-3xl font-bold tracking-tight font-headline">Recharge</h1>
-          <p className="text-muted-foreground">Deposit funds into your wallet.</p>
+          <h1 className="text-3xl font-bold tracking-tight font-headline">My Bank</h1>
+          <p className="text-muted-foreground">View your transaction history.</p>
         </header>
-      <div className="grid gap-8 lg:grid-cols-5">
-        <div className="lg:col-span-2 space-y-4">
-            <h2 className="text-xl font-semibold font-headline">Admin Wallets</h2>
-            <p className="text-sm text-muted-foreground">Please send your deposit amount to one of the following accounts.</p>
-            {adminWallets.map(wallet => (
-              <Card key={wallet.name}>
-                  <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-                      <Landmark className="w-8 h-8 text-primary"/>
-                      <div className="grid gap-1">
-                          <CardTitle>{wallet.name}</CardTitle>
-                          <CardDescription>{wallet.accountName}</CardDescription>
-                      </div>
-                  </CardHeader>
-                  <CardContent>
-                      <p className="text-lg font-mono tracking-wider">{wallet.accountNumber}</p>
-                  </CardContent>
-              </Card>
-            ))}
-        </div>
-        <div className="lg:col-span-3">
-          <Card>
-              <CardHeader>
-              <CardTitle>Deposit Funds</CardTitle>
-              <CardDescription>Fill the form after sending payment.</CardDescription>
-              </CardHeader>
-              <CardContent>
-              <Form {...depositForm}>
-                  <form onSubmit={depositForm.handleSubmit(onDepositSubmit)} className="space-y-4">
-                  <FormField control={depositForm.control} name="accountHolder" render={({ field }) => ( <FormItem> <FormLabel>Your Account Name</FormLabel> <FormControl> <Input placeholder="e.g. John Doe" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                  <FormField control={depositForm.control} name="accountNumber" render={({ field }) => ( <FormItem> <FormLabel>Your Account Number</FormLabel> <FormControl> <Input placeholder="e.g. 03001234567" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                  <FormField control={depositForm.control} name="amount" render={({ field }) => ( <FormItem> <FormLabel>Amount (PKR)</FormLabel> <FormControl> <Input type="number" placeholder="1000" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                  <FormField control={depositForm.control} name="transactionId" render={({ field }) => ( <FormItem> <FormLabel>Transaction ID (TID)</FormLabel> <FormControl> <Input placeholder="Enter the TID from your payment app" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                  <Button type="submit" className="w-full">Submit Deposit</Button>
-                  </form>
-              </Form>
-              </CardContent>
-          </Card>
-        </div>
-      </div>
+     
         <Card>
             <CardHeader>
                 <CardTitle>Transaction History</CardTitle>
