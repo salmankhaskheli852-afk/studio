@@ -139,6 +139,7 @@ export default function WithdrawalRequestsPage() {
                                     <TableCell>
                                         <div className="font-medium">{req.userDisplayName}</div>
                                         <div className="text-sm text-muted-foreground">{req.userEmail}</div>
+                                        <div className="text-xs text-muted-foreground font-mono">{req.userId}</div>
                                     </TableCell>
                                     <TableCell className="font-semibold text-red-600">{Math.abs(req.amount).toLocaleString()}</TableCell>
                                     <TableCell className="capitalize">{req.bankName || req.withdrawalMethod}</TableCell>

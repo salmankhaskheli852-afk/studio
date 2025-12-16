@@ -154,6 +154,7 @@ export default function DepositRequestsPage() {
                                     <TableCell>
                                         <div className="font-medium">{req.userDisplayName}</div>
                                         <div className="text-sm text-muted-foreground">{req.userEmail}</div>
+                                        <div className="text-xs text-muted-foreground font-mono">{req.userId}</div>
                                     </TableCell>
                                     <TableCell className="font-semibold text-emerald-600">{req.amount.toLocaleString()}</TableCell>
                                     <TableCell>{req.accountHolderName}</TableCell>
@@ -177,4 +178,3 @@ export default function DepositRequestsPage() {
         </div>
     );
 }
-
