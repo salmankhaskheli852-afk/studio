@@ -103,7 +103,7 @@ export function WalletClient({ transactions, adminWallets }: WalletClientProps) 
         <div className="lg:col-span-3">
           <Tabs defaultValue="deposit" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="deposit">Deposit</TabsTrigger>
+              <TabsTrigger value="deposit">Recharge</TabsTrigger>
               <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
             </TabsList>
             <TabsContent value="deposit">
@@ -134,7 +134,27 @@ export function WalletClient({ transactions, adminWallets }: WalletClientProps) 
                 <CardContent>
                   <Form {...withdrawForm}>
                     <form onSubmit={withdrawForm.handleSubmit(onWithdrawSubmit)} className="space-y-4">
-                      <FormField control={withdrawForm.control} name="method" render={({ field }) => ( <FormItem> <FormLabel>Withdrawal Method</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl> <SelectTrigger> <SelectValue placeholder="Select a method" /> </SelectTrigger> </FormControl> <SelectContent> <SelectItem value="jazzcash">JazzCash</SelectItem> <SelectItem value="easypaisa">Easypaisa</SelectItem> </SelectContent> </Select> <FormMessage /> </FormItem> )} />
+                      <FormField
+                        control={withdrawForm.control}
+                        name="method"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Withdrawal Method</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a method" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="jazzcash">JazzCash</SelectItem>
+                                <SelectItem value="easypaisa">Easypaisa</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                       <FormField control={withdrawForm.control} name="accountHolder" render={({ field }) => ( <FormItem> <FormLabel>Account Holder Name</FormLabel> <FormControl> <Input placeholder="e.g. John Doe" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
                       <FormField control={withdrawForm.control} name="accountNumber" render={({ field }) => ( <FormItem> <FormLabel>Account Number</FormLabel> <FormControl> <Input placeholder="e.g. 03001234567" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
                       <FormField control={withdrawForm.control} name="amount" render={({ field }) => ( <FormItem> <FormLabel>Amount (PKR)</FormLabel> <FormControl> <Input type="number" placeholder="500" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
