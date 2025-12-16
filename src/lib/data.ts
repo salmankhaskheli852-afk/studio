@@ -36,7 +36,7 @@ export const investmentPlans: InvestmentPlan[] = [
 
 export type Transaction = {
   id: string;
-  date: string;
+  timestamp: string;
   type: "Deposit" | "Withdrawal" | "Investment";
   amount: number;
   status: "Pending" | "Completed" | "Failed";
@@ -45,35 +45,35 @@ export type Transaction = {
 export const transactions: Transaction[] = [
   {
     id: "txn_1",
-    date: "2024-07-28",
+    timestamp: "2024-07-28T10:00:00Z",
     type: "Deposit",
     amount: 5000,
     status: "Completed",
   },
   {
     id: "txn_2",
-    date: "2024-07-27",
+    timestamp: "2024-07-27T11:00:00Z",
     type: "Investment",
     amount: -1000,
     status: "Completed",
   },
   {
     id: "txn_3",
-    date: "2024-07-26",
+    timestamp: "2024-07-26T12:00:00Z",
     type: "Withdrawal",
     amount: -500,
     status: "Pending",
   },
   {
     id: "txn_4",
-    date: "2024-07-25",
+    timestamp: "2024-07-25T13:00:00Z",
     type: "Deposit",
     amount: 2000,
     status: "Completed",
   },
   {
     id: "txn_5",
-    date: "2024-07-24",
+    timestamp: "2024-07-24T14:00:00Z",
     type: "Withdrawal",
     amount: -1000,
     status: "Failed",

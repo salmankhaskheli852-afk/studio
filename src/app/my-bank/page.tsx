@@ -25,6 +25,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from 'react';
 import { adminWallets } from "@/lib/data";
 import { Landmark } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import type { Transaction } from "@/lib/data";
+import { useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore } from '@/firebase/provider';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 
 const depositSchema = z.object({
   accountHolder: z.string().min(2, "Name is too short"),
@@ -64,6 +70,14 @@ const bankOptions = [
 
 export default function MyBankPage() {
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const transactionsQuery = useMemoFirebase(
+    () => user ? query(collection(firestore, `users/${user.uid}/wallet/${user.uid}/transactions`), orderBy('timestamp', 'desc'), limit(15)) : null,
+    [firestore, user]
+  );
+  const { data: transactions, isLoading: isLoadingTransactions } = useCollection<Transaction>(transactionsQuery);
 
   const depositForm = useForm<z.infer<typeof depositSchema>>({
     resolver: zodResolver(depositSchema),
@@ -98,6 +112,20 @@ export default function MyBankPage() {
   };
 
   const currentOptions = selectedMethod === 'wallet' ? walletOptions : bankOptions;
+  
+  const getStatusBadgeVariant = (status: Transaction["status"]) => {
+    switch (status) {
+      case "Completed":
+        return "default";
+      case "Pending":
+        return "secondary";
+      case "Failed":
+        return "destructive";
+      default:
+        return "outline";
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -307,6 +335,47 @@ export default function MyBankPage() {
             </Card>
             </TabsContent>
         </Tabs>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Transaction History</CardTitle>
+                <CardDescription>A record of your recent activity.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Amount (PKR)</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoadingTransactions ? (
+                            <TableRow>
+                                <TableCell colSpan={4} className="text-center">Loading history...</TableCell>
+                            </TableRow>
+                        ) : transactions && transactions.length > 0 ? (
+                            transactions.map((transaction) => (
+                                <TableRow key={transaction.id}>
+                                <TableCell>{new Date(transaction.timestamp).toLocaleDateString()}</TableCell>
+                                <TableCell>{transaction.type}</TableCell>
+                                <TableCell>
+                                    <Badge variant={getStatusBadgeVariant(transaction.status)}>{transaction.status}</Badge>
+                                </TableCell>
+                                <TableCell className={`text-right font-medium ${transaction.type === 'Deposit' ? 'text-emerald-600' : 'text-destructive'}`}>{transaction.amount.toLocaleString()}</TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={4} className="text-center">No transactions found.</TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
     </div>
   );
 }

@@ -186,7 +186,7 @@ export function WalletClient({ transactions, adminWallets }: WalletClientProps) 
             <TableBody>
               {transactions.map((transaction) => (
                 <TableRow key={transaction.id}>
-                  <TableCell>{transaction.date}</TableCell>
+                  <TableCell>{new Date(transaction.timestamp).toLocaleDateString()}</TableCell>
                   <TableCell>{transaction.type}</TableCell>
                   <TableCell>
                     <Badge variant={getStatusBadgeVariant(transaction.status)}>{transaction.status}</Badge>
