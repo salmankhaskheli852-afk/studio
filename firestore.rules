@@ -3,7 +3,7 @@
  * Data Structure: All user data is nested under /users/{userId}, including their profile, wallet, and transactions. This path-based nesting is the primary security mechanism. Public data, such as /investment_plans and /admin_wallet_details, exists at the root level.
  * Key Security Decisions:
  *   - Users are strictly isolated and cannot read or write any data outside their own /users/{userId} document tree.
- *   - Admins (identified by a custom claim `isAdmin: true`) can read all user data for moderation and support.
+ *   - Admins (identified by a custom claim `isAdmin: true` or a field `isAdmin: true` in their own user document) can read all user data for moderation and support.
  *   - Listing users from the root /users collection is restricted to admins only for security and privacy.
  *   - Collections like `investment_plans` and `admin_wallet_details` are publicly readable to allow the client app to function, but all write operations are disabled pending the implementation of a proper admin role system.
  * Denormalization for Authorization: The rules rely on the path structure `/users/{userId}/...` for authorization, which avoids costly `get()` calls to check ownership on nested documents like wallets or transactions. On document creation, the rules validate that internal IDs (e.g., a `userId` field) match the document's path to ensure relational integrity.
@@ -23,9 +23,9 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
     
-    // Checks if the user has an 'isAdmin' custom claim.
+    // Checks if the user has an 'isAdmin' custom claim OR if their user document has isAdmin: true.
     function isAdmin() {
-      return isSignedIn() && request.auth.token.isAdmin == true;
+      return isSignedIn() && (request.auth.token.isAdmin == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
     }
 
     // For update/delete, ensures the document exists AND the user is the owner.
@@ -46,7 +46,7 @@ service cloud.firestore {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow update: if isOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if false;
     }
 
@@ -62,8 +62,8 @@ service cloud.firestore {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
+      allow update: if isOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isOwner(userId);
     }
 
     /**
@@ -78,8 +78,8 @@ service cloud.firestore {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) && request.resource.data.walletId == walletId;
-      allow update: if isExistingOwner(userId) && request.resource.data.walletId == resource.data.walletId;
-      allow delete: if isExistingOwner(userId);
+      allow update: if isOwner(userId) && request.resource.data.walletId == resource.data.walletId;
+      allow delete: if isOwner(userId);
     }
 
     /**
