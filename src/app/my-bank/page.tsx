@@ -41,41 +41,19 @@ const depositSchema = z.object({
 });
 
 const withdrawSchema = z.object({
-  method: z.string({ required_error: "Please select a method." }),
-  bankName: z.string().optional(),
+  method: z.string({ required_error: "Please select a wallet." }),
   accountHolder: z.string().min(2, "Name is too short"),
   accountNumber: z.string().min(5, "Account number is required"),
   amount: z.coerce.number().min(500, "Minimum withdrawal is 500 PKR"),
 });
 
 const walletOptions = ['JazzCash', 'Easypaisa'];
-const bankOptions = [
-    "Allied Bank Limited",
-    "Askari Bank",
-    "Bank Alfalah",
-    "Bank Al-Habib",
-    "BankIslami Pakistan",
-    "Bank of Punjab",
-    "Dubai Islamic Bank",
-    "Faysal Bank",
-    "Habib Bank Limited",
-    "JS Bank",
-    "MCB Bank",
-    "Meezan Bank",
-    "National Bank of Pakistan",
-    "Soneri Bank",
-    "Standard Chartered Bank",
-    "Summit Bank",
-    "United Bank Limited",
-];
-
 
 export default function MyBankPage() {
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("recharge");
-  const [withdrawalMethod, setWithdrawalMethod] = useState<'wallet' | 'bank'>('wallet');
 
   const transactionsQuery = useMemoFirebase(
     () => user ? query(collection(firestore, `users/${user.uid}/wallet/${user.uid}/transactions`), orderBy('timestamp', 'desc'), limit(15)) : null,
@@ -130,7 +108,6 @@ export default function MyBankPage() {
     resolver: zodResolver(withdrawSchema),
     defaultValues: {
         method: "",
-        bankName: "",
         accountHolder: "",
         accountNumber: "",
         amount: 0,
@@ -188,6 +165,7 @@ export default function MyBankPage() {
             const newTransactionRef = doc(transactionsColRef); // create a reference to get the ID
             transaction.set(newTransactionRef, {
                 ...values,
+                bankName: values.method, // Use method for the wallet name
                 type: 'Withdrawal',
                 status: 'Pending',
                 amount: -values.amount, // Store as negative
@@ -204,8 +182,6 @@ export default function MyBankPage() {
     }
   }
   
-  const currentOptions = withdrawalMethod === 'wallet' ? walletOptions : bankOptions;
-
   const getStatusBadgeVariant = (status?: Transaction["status"]) => {
     switch (status) {
       case "Completed":
@@ -277,59 +253,33 @@ export default function MyBankPage() {
                 <CardContent>
                 <Form {...withdrawForm}>
                     <form onSubmit={withdrawForm.handleSubmit(onWithdrawSubmit)} className="space-y-4">
-                     <FormField
+                    <FormField
                         control={withdrawForm.control}
                         name="method"
                         render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Choose withdrawal method</FormLabel>
-                             <Select onValueChange={(value: 'wallet' | 'bank') => {
-                                field.onChange(value);
-                                setWithdrawalMethod(value);
-                                withdrawForm.setValue('bankName', '');
-                            }} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a method" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="wallet">Wallet account (Jazzcash/Easypaisa)</SelectItem>
-                                    <SelectItem value="bank">Bank account</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
+                            <FormItem>
+                                <FormLabel>Choose withdrawal wallet</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a wallet" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {walletOptions.map((option) => (
+                                            <SelectItem key={option} value={option}>
+                                                {option}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
                         )}
                     />
 
-                    <FormField
-                        control={withdrawForm.control}
-                        name="bankName"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Please select</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder={`Select a ${withdrawalMethod === 'wallet' ? 'wallet' : 'bank'}`} />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                {currentOptions.map((option) => (
-                                    <SelectItem key={option} value={option}>
-                                    {option}
-                                    </SelectItem>
-                                ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-
                     <FormField control={withdrawForm.control} name="accountHolder" render={({ field }) => ( <FormItem> <FormLabel>Account Holder Name</FormLabel> <FormControl> <Input placeholder="Your full name" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                    <FormField control={withdrawForm.control} name="accountNumber" render={({ field }) => ( <FormItem> <FormLabel>Account/Wallet Number</FormLabel> <FormControl> <Input placeholder="e.g. 03001234567 or Bank Account No." {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
+                    <FormField control={withdrawForm.control} name="accountNumber" render={({ field }) => ( <FormItem> <FormLabel>Account/Wallet Number</FormLabel> <FormControl> <Input placeholder="e.g. 03001234567" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
                     <FormField control={withdrawForm.control} name="amount" render={({ field }) => ( <FormItem> <FormLabel>Amount (PKR)</FormLabel> <FormControl> <Input type="number" placeholder="500" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
                    
                     <Button type="submit" className="w-full" disabled={isWalletLoading}>
