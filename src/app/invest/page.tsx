@@ -1,0 +1,54 @@
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { investmentPlans } from "@/lib/data";
+import { PiggyBank, Zap, BarChart3 } from "lucide-react";
+
+const planIcons = [
+  <PiggyBank key="1" className="h-8 w-8 text-primary" />,
+  <Zap key="2" className="h-8 w-8 text-primary" />,
+  <BarChart3 key="3" className="h-8 w-8 text-primary" />
+];
+
+export default function InvestPage() {
+  return (
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-3xl font-bold tracking-tight font-headline">Investment Plans</h1>
+        <p className="text-muted-foreground">Choose a plan that suits your financial goals.</p>
+      </header>
+
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {investmentPlans.map((plan, index) => (
+          <Card key={plan.id} className="flex flex-col">
+            <CardHeader>
+              <div className="flex items-center gap-4">
+                {planIcons[index]}
+                <div>
+                  <CardTitle className="font-headline">{plan.name}</CardTitle>
+                  <CardDescription>Earn {plan.dailyReturn}% daily</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-grow space-y-4">
+              <div className="flex justify-between border-t pt-4">
+                <span className="text-muted-foreground">Term</span>
+                <span className="font-semibold">{plan.period} days</span>
+              </div>
+              <div className="flex justify-between border-t pt-4">
+                <span className="text-muted-foreground">Min. Investment</span>
+                <span className="font-semibold">PKR {plan.minInvest.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between border-t pt-4">
+                <span className="text-muted-foreground">Max. Investment</span>
+                <span className="font-semibold">PKR {plan.maxInvest.toLocaleString()}</span>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">Invest Now</Button>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
