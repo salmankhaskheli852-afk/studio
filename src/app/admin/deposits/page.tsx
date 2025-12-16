@@ -32,8 +32,7 @@ export default function DepositRequestsPage() {
         try {
             const transactionsQuery = query(
                 collectionGroup(firestore, 'transactions'), 
-                where('type', '==', 'Deposit'),
-                where('status', '==', 'Pending')
+                where('type', '==', 'Deposit')
             );
             const querySnapshot = await getDocs(transactionsQuery);
 
@@ -41,6 +40,12 @@ export default function DepositRequestsPage() {
 
             for (const transactionDoc of querySnapshot.docs) {
                 const data = transactionDoc.data() as Transaction;
+                
+                // Filter for pending requests on the client side
+                if (data.status !== 'Pending') {
+                    continue;
+                }
+
                 const pathParts = transactionDoc.ref.path.split('/');
                 const userId = pathParts[1];
 
