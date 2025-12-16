@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { adminWallets } from "@/lib/data";
 import { Landmark } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -31,7 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import type { Transaction } from "@/lib/data";
 import { useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { useFirestore } from '@/firebase/provider';
-import { collection, query, orderBy, limit, addDoc, serverTimestamp, doc, runTransaction, increment } from 'firebase/firestore';
+import { collection, query, orderBy, limit, addDoc, serverTimestamp, doc, runTransaction, increment, getDoc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 const depositSchema = z.object({
@@ -90,6 +90,33 @@ export default function MyBankPage() {
   );
   const { data: walletData, isLoading: isWalletLoading } = useDoc(walletDocRef);
 
+  // Effect to ensure wallet exists for the logged-in user
+  useEffect(() => {
+    const ensureWalletExists = async () => {
+      if (user && firestore && walletDocRef) {
+        const walletSnap = await getDoc(walletDocRef);
+        if (!walletSnap.exists()) {
+          try {
+            await setDoc(walletDocRef, {
+              id: user.uid,
+              userId: user.uid,
+              balance: 0,
+            });
+            console.log("Wallet created for user:", user.uid);
+          } catch (error) {
+            console.error("Failed to create wallet:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Wallet Creation Failed',
+                description: 'Could not create a wallet for your account.'
+            });
+          }
+        }
+      }
+    };
+    ensureWalletExists();
+  }, [user, firestore, walletDocRef, toast]);
+
   const depositForm = useForm<z.infer<typeof depositSchema>>({
     resolver: zodResolver(depositSchema),
     defaultValues: {
@@ -118,11 +145,14 @@ export default function MyBankPage() {
     try {
       const transactionsColRef = collection(firestore, `users/${user.uid}/wallet/${user.uid}/transactions`);
       await addDoc(transactionsColRef, {
-        ...values,
+        walletId: user.uid, // Correct field name
         type: 'Deposit',
         status: 'Pending',
         timestamp: serverTimestamp(),
-        walletId: user.uid,
+        amount: values.amount,
+        accountHolderName: values.accountHolder,
+        accountNumber: values.accountNumber,
+        transactionId: values.transactionId,
       });
 
       toast({ title: "Deposit Submitted", description: "Your deposit request has been submitted and is pending approval." });
@@ -339,7 +369,7 @@ export default function MyBankPage() {
                                 <TableCell>
                                     <Badge variant={getStatusBadgeVariant(transaction.status)}>{transaction.status}</Badge>
                                 </TableCell>
-                                <TableCell className={`text-right font-medium ${transaction.type === 'Deposit' || transaction.amount > 0 ? 'text-emerald-600' : 'text-destructive'}`}>{Math.abs(transaction.amount).toLocaleString()}</TableCell>
+                                <TableCell className={`text-right font-medium ${transaction.type === 'Deposit' || (transaction.type !== 'Withdrawal' && transaction.amount > 0) ? 'text-emerald-600' : 'text-destructive'}`}>{Math.abs(transaction.amount).toLocaleString()}</TableCell>
                                 </TableRow>
                             ))
                         ) : (
@@ -353,4 +383,3 @@ export default function MyBankPage() {
         </Card>
     </div>
   );
-}

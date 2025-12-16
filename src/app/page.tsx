@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { DollarSign, TrendingUp, Users } from "lucide-react";
 import Link from "next/link";
 import { useUser, useDoc, useMemoFirebase } from "@/firebase";
-import { doc, collection } from "firebase/firestore";
+import { doc } from "firebase/firestore";
 import { useFirestore } from "@/firebase/provider";
 
 export default function Home() {
@@ -90,7 +90,7 @@ export default function Home() {
         </CardHeader>
         <CardContent className="flex flex-wrap gap-4">
           <Button asChild>
-            <Link href="/wallet">Deposit Funds</Link>
+            <Link href="/my-bank">Deposit Funds</Link>
           </Button>
           <Button asChild variant="secondary">
             <Link href="/invest">Explore Plans</Link>
@@ -99,4 +99,3 @@ export default function Home() {
       </Card>
     </div>
   );
-}
