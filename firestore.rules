@@ -3,7 +3,7 @@
  * Data Structure: All user data is nested under /users/{userId}, including their profile, wallet, and transactions. This path-based nesting is the primary security mechanism. Public data, such as /investment_plans and /admin_wallet_details, exists at the root level.
  * Key Security Decisions:
  *   - Users are strictly isolated and cannot read or write any data outside their own /users/{userId} document tree.
- *   - Admins (identified by a field `isAdmin: true` in their own user document) can read all user data for moderation and support.
+ *   - Admins (identified by a specific email address) can read all user data for moderation and support.
  *   - Listing users from the root /users collection is restricted to admins only for security and privacy.
  *   - Collections like `investment_plans` and `admin_wallet_details` are publicly readable to allow the client app to function, but all write operations are disabled pending the implementation of a proper admin role system.
  * Denormalization for Authorization: The rules rely on the path structure `/users/{userId}/...` for authorization, which avoids costly `get()` calls to check ownership on nested documents like wallets or transactions. On document creation, the rules validate that internal IDs (e.g., a `userId` field) match the document's path to ensure relational integrity.
@@ -23,10 +23,9 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Checks if the user's own user document has isAdmin: true.
+    // IMPORTANT: Replace "admin@example.com" with the actual admin's email address.
     function isAdmin() {
-      return isSignedIn() && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      return isSignedIn() && request.auth.token.email == "admin@example.com";
     }
     
     // For update/delete, ensures the document exists AND the user is the owner.

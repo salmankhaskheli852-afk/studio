@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useUser, useAuth } from '@/firebase';
 import {
   Avatar,
@@ -31,13 +31,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-const navItems = [
+const allNavItems = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/invest', label: 'Invest', icon: TrendingUp },
   { href: '/invite', label: 'Invite', icon: Users },
   { href: '/my-bank', label: 'My Bank', icon: Banknote },
-  { href: '/admin', label: 'Admin', icon: Shield },
+  { href: '/admin', label: 'Admin', icon: Shield, adminOnly: true },
 ];
+
+const ADMIN_EMAIL = "admin@example.com"; // IMPORTANT: Replace with your actual admin email
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -50,6 +52,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       auth.signOut();
     }
   };
+
+  const navItems = useMemo(() => {
+    const isAdmin = user?.email === ADMIN_EMAIL;
+    if (isAdmin) {
+      return allNavItems.filter(item => item.adminOnly);
+    }
+    return allNavItems.filter(item => !item.adminOnly);
+  }, [user]);
 
   const NavContent = () => (
     <nav className="flex flex-col gap-4">
