@@ -19,7 +19,7 @@ const bankAccountSchema = z.object({
   bankName: z.string().optional(),
   walletOrBankAccount: z.string().min(1, "Wallet or bank account is required."),
   idNumber: z.string().optional(),
-  phoneNumber: z.string().regex(/^3\d{9}$/, "The wallet account must be an 11-digit number starting with 03."),
+  phoneNumber: z.string().regex(/^3\d{9}$/, "The wallet account must be an 11-digit number starting with 3."),
 });
 
 type BankAccount = z.infer<typeof bankAccountSchema> & { id: string };
@@ -125,12 +125,12 @@ export default function MyBankPage() {
                       <FormField control={form.control} name="phoneNumber" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Phone Number</FormLabel>
-                          <div className="flex items-center">
-                            <span className="inline-flex items-center px-3 text-sm text-gray-900 bg-gray-200 border border-r-0 border-gray-300 rounded-l-md dark:bg-gray-600 dark:text-gray-400 dark:border-gray-600 h-10">+92</span>
-                            <FormControl>
-                                <Input className="rounded-l-none" placeholder="3112765988" {...field} />
-                            </FormControl>
-                          </div>
+                          <FormControl>
+                            <div className="flex items-center">
+                              <span className="inline-flex items-center px-3 text-sm text-gray-900 bg-gray-200 border border-r-0 border-gray-300 rounded-l-md dark:bg-gray-600 dark:text-gray-400 dark:border-gray-600 h-10">+92</span>
+                              <Input className="rounded-l-none" placeholder="3112765988" {...field} />
+                            </div>
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )} />
