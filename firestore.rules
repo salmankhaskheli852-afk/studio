@@ -60,12 +60,12 @@ service cloud.firestore {
 
     /**
      * @description Secures a user's transaction history within a specific wallet.
-     * @path /users/{userId}/wallets/{walletId}/transactions/{transactionId}
-     * @allow The user 'user123' can (create) a new transaction at `/users/user123/wallets/w_abc/transactions/t_123`.
-     * @deny The user 'user456' cannot (list) transactions at `/users/user123/wallets/w_abc/transactions`.
+     * @path /users/{userId}/wallet/{walletId}/transactions/{transactionId}
+     * @allow The user 'user123' can (create) a new transaction at `/users/user123/wallet/w_abc/transactions/t_123`.
+     * @deny The user 'user456' cannot (list) transactions at `/users/user123/wallet/w_abc/transactions`.
      * @principle Inherits ownership from the path, ensuring only the user can manage their financial records.
      */
-    match /users/{userId}/wallets/{walletId}/transactions/{transactionId} {
+    match /users/{userId}/wallet/{walletId}/transactions/{transactionId} {
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.walletId == walletId;
