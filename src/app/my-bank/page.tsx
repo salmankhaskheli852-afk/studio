@@ -259,20 +259,20 @@ export default function MyBankPage() {
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Choose withdrawal wallet</FormLabel>
-                                <FormControl>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select a wallet" />
                                         </SelectTrigger>
-                                        <SelectContent>
-                                            {walletOptions.map((option) => (
-                                                <SelectItem key={option} value={option}>
-                                                    {option}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </FormControl>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {walletOptions.map((option) => (
+                                            <SelectItem key={option} value={option}>
+                                                {option}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                 <FormMessage />
                             </FormItem>
                         )}
