@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -34,15 +33,17 @@ import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ArrowDownToDot, ArrowUpFromDot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useCollection, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { useFirestore } from '@/firebase/provider';
 import { collection, addDoc, serverTimestamp, doc, runTransaction, increment } from 'firebase/firestore';
-import type { adminWallets as AdminWalletType } from "@/lib/data";
 import { adminWallets } from '@/lib/data';
 
 
 // Deposit Schema
 const depositSchema = z.object({
+  depositTo: z.enum(adminWallets.map(w => w.name) as [string, ...string[]], {
+    required_error: "You need to select a deposit method."
+  }),
   accountHolderName: z.string().min(3, 'Name must be at least 3 characters.'),
   accountNumber: z.string().min(11, 'Please enter a valid account number.'),
   amount: z.coerce.number().positive('Amount must be positive.'),
@@ -104,6 +105,7 @@ export function WalletClient() {
             type: 'Deposit',
             status: 'Pending',
             timestamp: serverTimestamp(),
+            walletId: user.uid,
         });
         toast({ title: 'Deposit Request Submitted', description: 'Your request is pending verification.' });
         setDepositOpen(false);
@@ -181,20 +183,42 @@ export function WalletClient() {
                 <DialogHeader>
                   <DialogTitle>Deposit Funds</DialogTitle>
                   <DialogDescription>
-                    Send funds to the accounts below and enter the details to verify.
+                    Send funds to an account below and enter the details to verify.
                   </DialogDescription>
                 </DialogHeader>
-                 <div className="space-y-4 py-4">
-                    {adminWallets.map(wallet => (
-                         <div key={wallet.name} className="p-3 rounded-md border bg-muted/50">
-                             <h4 className="font-semibold">{wallet.name}</h4>
-                             <p className="text-sm">Name: {wallet.accountName}</p>
-                             <p className="text-sm">Number: {wallet.accountNumber}</p>
-                         </div>
-                    ))}
-                 </div>
+                 
                 <Form {...depositForm}>
                   <form onSubmit={depositForm.handleSubmit(onDepositSubmit)} className="space-y-4">
+                     <FormField
+                        control={depositForm.control}
+                        name="depositTo"
+                        render={({ field }) => (
+                            <FormItem className="space-y-3">
+                            <FormLabel>Select Admin Account</FormLabel>
+                            <FormControl>
+                                <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="space-y-2"
+                                >
+                                {adminWallets.map(wallet => (
+                                    <FormItem key={wallet.name} className="flex items-center space-x-3 space-y-0 rounded-md border p-3 has-[:checked]:border-primary">
+                                        <FormControl>
+                                            <RadioGroupItem value={wallet.name} />
+                                        </FormControl>
+                                        <FormLabel className="font-normal w-full">
+                                             <h4 className="font-semibold">{wallet.name}</h4>
+                                             <p className="text-sm">Name: {wallet.accountName}</p>
+                                             <p className="text-sm">Number: {wallet.accountNumber}</p>
+                                        </FormLabel>
+                                    </FormItem>
+                                ))}
+                                </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
                     <FormField control={depositForm.control} name="accountHolderName" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Your Account Holder Name</FormLabel>
@@ -309,5 +333,3 @@ export function WalletClient() {
     </div>
   );
 }
-
-    
