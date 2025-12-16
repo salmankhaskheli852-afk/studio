@@ -84,6 +84,7 @@ export default function MyBankPage() {
     defaultValues: {
       accountHolder: "",
       accountNumber: "",
+      amount: 0,
       transactionId: "",
     }
   });
@@ -92,6 +93,8 @@ export default function MyBankPage() {
     resolver: zodResolver(bankAccountSchema),
     defaultValues: {
       cardholderName: '',
+      withdrawalMethod: 'wallet',
+      bankName: '',
       idNumber: '',
       phoneNumber: '',
     },
@@ -113,7 +116,7 @@ export default function MyBankPage() {
 
   const currentOptions = selectedMethod === 'wallet' ? walletOptions : bankOptions;
   
-  const getStatusBadgeVariant = (status: Transaction["status"]) => {
+  const getStatusBadgeVariant = (status?: Transaction["status"]) => {
     switch (status) {
       case "Completed":
         return "default";
@@ -359,7 +362,7 @@ export default function MyBankPage() {
                         ) : transactions && transactions.length > 0 ? (
                             transactions.map((transaction) => (
                                 <TableRow key={transaction.id}>
-                                <TableCell>{new Date(transaction.timestamp).toLocaleDateString()}</TableCell>
+                                <TableCell>{transaction.timestamp ? new Date((transaction.timestamp as any).seconds * 1000).toLocaleDateString() : 'N/A'}</TableCell>
                                 <TableCell>{transaction.type}</TableCell>
                                 <TableCell>
                                     <Badge variant={getStatusBadgeVariant(transaction.status)}>{transaction.status}</Badge>
