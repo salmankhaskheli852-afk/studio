@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -130,6 +129,8 @@ export default function MyBankPage() {
   const withdrawForm = useForm<z.infer<typeof withdrawSchema>>({
     resolver: zodResolver(withdrawSchema),
     defaultValues: {
+        method: "",
+        bankName: "",
         accountHolder: "",
         accountNumber: "",
         amount: 0,
@@ -308,12 +309,11 @@ export default function MyBankPage() {
                         render={({ field }) => (
                             <FormItem>
                             <FormLabel>Please select</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
+                            <FormControl>
+                            <Select onValueChange={field.onChange} value={field.value}>
                                 <SelectTrigger>
                                     <SelectValue placeholder={`Select a ${withdrawalMethod === 'wallet' ? 'wallet' : 'bank'}`} />
                                 </SelectTrigger>
-                                </FormControl>
                                 <SelectContent>
                                 {currentOptions.map((option) => (
                                     <SelectItem key={option} value={option}>
@@ -322,6 +322,7 @@ export default function MyBankPage() {
                                 ))}
                                 </SelectContent>
                             </Select>
+                            </FormControl>
                             <FormMessage />
                             </FormItem>
                         )}
@@ -383,5 +384,4 @@ export default function MyBankPage() {
         </Card>
     </div>
   );
-
-    
+  
