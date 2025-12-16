@@ -17,7 +17,7 @@ import {
   ArrowUpFromDot,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { useState, useMemo, useEffect } from 'react';
 import { useUser, useAuth } from '@/firebase';
 import {
@@ -136,6 +136,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col p-4 md:hidden">
+                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                <SheetDescription className="sr-only">A list of links to navigate the application.</SheetDescription>
               <NavContent />
             </SheetContent>
           </Sheet>
