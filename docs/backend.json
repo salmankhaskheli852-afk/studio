@@ -88,11 +88,6 @@
         "transactionId": {
           "type": "string",
           "description": "Transaction ID provided by the payment gateway (e.g., JazzCash, Easypaisa)."
-        },
-        "screenshotUrl": {
-          "type": "string",
-          "description": "URL of the screenshot for deposit verification.",
-          "format": "uri"
         }
       },
       "required": [
