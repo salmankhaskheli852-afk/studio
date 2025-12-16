@@ -140,17 +140,17 @@ export function WalletClient({ transactions, adminWallets }: WalletClientProps) 
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Withdrawal Method</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a method" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="jazzcash">JazzCash</SelectItem>
-                                <SelectItem value="easypaisa">Easypaisa</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a method" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="jazzcash">JazzCash</SelectItem>
+                                        <SelectItem value="easypaisa">Easypaisa</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
