@@ -24,6 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 const bankAccountSchema = z.object({
   cardholderName: z.string().min(5, "Cardholder name must be between 5 and 30 characters.").max(30, "Cardholder name must be between 5 and 30 characters."),
   withdrawalMethod: z.string({ required_error: 'Please select a withdrawal method.' }),
+  pleaseSelect: z.string({ required_error: 'Please select an option.'}),
   accountNumber: z.string().regex(/^03\d{9}$/, 'The wallet account must be an 11-digit number starting with 03.'),
   idNumber: z.string().min(1, "ID number is required."),
 });
@@ -87,6 +88,40 @@ export default function MyBankPage() {
                         <SelectItem value="wallet">Wallet account</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="pleaseSelect"
+                render={({ field }) => (
+                  <FormItem>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Please select" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="jazzcash">JazzCash</SelectItem>
+                        <SelectItem value="easypaisa">Easypaisa</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="accountNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input placeholder="Wallet or bank account" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
