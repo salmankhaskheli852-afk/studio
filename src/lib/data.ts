@@ -36,7 +36,7 @@ export const investmentPlans: InvestmentPlan[] = [
 
 export type Transaction = {
   id: string;
-  timestamp: string;
+  timestamp: string | Date; // Allow Date object
   type: "Deposit" | "Withdrawal" | "Investment";
   amount: number;
   status: "Pending" | "Completed" | "Failed";
