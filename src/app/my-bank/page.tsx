@@ -13,15 +13,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from 'react';
 import { adminWallets } from "@/lib/data";
 import { Landmark } from 'lucide-react';
@@ -30,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import type { Transaction } from "@/lib/data";
 import { useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { useFirestore } from '@/firebase/provider';
-import { collection, query, orderBy, limit, addDoc, serverTimestamp, doc, runTransaction, increment, getDoc, setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, addDoc, serverTimestamp, doc, getDoc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 const depositSchema = z.object({
@@ -40,20 +32,10 @@ const depositSchema = z.object({
   transactionId: z.string().min(5, "Transaction ID is required"),
 });
 
-const withdrawSchema = z.object({
-  method: z.string({ required_error: "Please select a wallet." }),
-  accountHolder: z.string().min(2, "Name is too short"),
-  accountNumber: z.string().min(5, "Account number is required"),
-  amount: z.coerce.number().min(500, "Minimum withdrawal is 500 PKR"),
-});
-
-const walletOptions = ['JazzCash', 'Easypaisa'];
-
 export default function MyBankPage() {
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("recharge");
 
   const transactionsQuery = useMemoFirebase(
     () => user ? query(collection(firestore, `users/${user.uid}/wallet/${user.uid}/transactions`), orderBy('timestamp', 'desc'), limit(15)) : null,
@@ -104,16 +86,6 @@ export default function MyBankPage() {
     }
   });
 
-  const withdrawForm = useForm<z.infer<typeof withdrawSchema>>({
-    resolver: zodResolver(withdrawSchema),
-    defaultValues: {
-        method: "",
-        accountHolder: "",
-        accountNumber: "",
-        amount: 0,
-    },
-  });
-
   async function onDepositSubmit(values: z.infer<typeof depositSchema>) {
     if (!user || !firestore) {
       toast({ variant: "destructive", title: "Error", description: "You must be logged in to make a deposit." });
@@ -141,47 +113,6 @@ export default function MyBankPage() {
     }
   }
 
-  async function onWithdrawSubmit(values: z.infer<typeof withdrawSchema>) {
-    if (!user || !firestore) {
-      toast({ variant: "destructive", title: "Error", description: "You must be logged in to make a withdrawal." });
-      return;
-    }
-
-    const currentBalance = walletData?.balance ?? 0;
-    if (currentBalance < values.amount) {
-        toast({ variant: "destructive", title: "Insufficient Balance", description: "You do not have enough funds for this withdrawal." });
-        return;
-    }
-
-    try {
-        await runTransaction(firestore, async (transaction) => {
-            const walletRef = doc(firestore, `users/${user.uid}/wallet`, user.uid);
-            const transactionsColRef = collection(firestore, `users/${user.uid}/wallet/${user.uid}/transactions`);
-
-            // 1. Deduct balance immediately
-            transaction.update(walletRef, { balance: increment(-values.amount) });
-
-            // 2. Create pending withdrawal transaction
-            const newTransactionRef = doc(transactionsColRef); // create a reference to get the ID
-            transaction.set(newTransactionRef, {
-                ...values,
-                bankName: values.method, // Use method for the wallet name
-                type: 'Withdrawal',
-                status: 'Pending',
-                amount: -values.amount, // Store as negative
-                timestamp: serverTimestamp(),
-                walletId: user.uid,
-            });
-        });
-
-        toast({ title: "Withdrawal Submitted", description: "Your withdrawal request has been submitted." });
-        withdrawForm.reset();
-    } catch (error) {
-        console.error("Error submitting withdrawal:", error);
-        toast({ variant: "destructive", title: "Submission Failed", description: "An error occurred while submitting your withdrawal." });
-    }
-  }
-  
   const getStatusBadgeVariant = (status?: Transaction["status"]) => {
     switch (status) {
       case "Completed":
@@ -198,100 +129,49 @@ export default function MyBankPage() {
 
   return (
     <div className="space-y-6">
-        <Tabs defaultValue="recharge" className="w-full" onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="recharge">Recharge</TabsTrigger>
-            <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
-            </TabsList>
-            <TabsContent value="recharge">
-            <div className="grid gap-8 lg:grid-cols-5">
-              <div className="lg:col-span-2 space-y-4">
-                  <h2 className="text-xl font-semibold font-headline">Admin Wallets</h2>
-                  <p className="text-sm text-muted-foreground">Please send your deposit amount to one of the following accounts.</p>
-                  {adminWallets.map(wallet => (
-                    <Card key={wallet.name}>
-                        <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-                            <Landmark className="w-8 h-8 text-primary"/>
-                            <div className="grid gap-1">
-                                <CardTitle>{wallet.name}</CardTitle>
-                                <CardDescription>{wallet.accountName}</CardDescription>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-lg font-mono tracking-wider">{wallet.accountNumber}</p>
-                        </CardContent>
-                    </Card>
-                  ))}
-              </div>
-              <div className="lg:col-span-3">
-                <Card>
-                    <CardHeader>
-                    <CardTitle>Deposit Funds</CardTitle>
-                    <CardDescription>Fill the form after sending payment.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                    <Form {...depositForm}>
-                        <form onSubmit={depositForm.handleSubmit(onDepositSubmit)} className="space-y-4">
-                        <FormField control={depositForm.control} name="accountHolder" render={({ field }) => ( <FormItem> <FormLabel>Your Account Name</FormLabel> <FormControl> <Input placeholder="e.g. John Doe" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                        <FormField control={depositForm.control} name="accountNumber" render={({ field }) => ( <FormItem> <FormLabel>Your Account Number</FormLabel> <FormControl> <Input placeholder="e.g. 03001234567" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                        <FormField control={depositForm.control} name="amount" render={({ field }) => ( <FormItem> <FormLabel>Amount (PKR)</FormLabel> <FormControl> <Input type="number" placeholder="1000" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                        <FormField control={depositForm.control} name="transactionId" render={({ field }) => ( <FormItem> <FormLabel>Transaction ID (TID)</FormLabel> <FormControl> <Input placeholder="Enter the TID from your payment app" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                        <Button type="submit" className="w-full">Submit Deposit</Button>
-                        </form>
-                    </Form>
-                    </CardContent>
-                </Card>
-              </div>
-            </div>
-            </TabsContent>
-            <TabsContent value="withdraw">
-            <Card className="max-w-2xl mx-auto">
-                <CardHeader>
-                <CardTitle>Request Withdrawal</CardTitle>
-                <CardDescription>Fill in the details below to request a withdrawal.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                <Form {...withdrawForm}>
-                    <form onSubmit={withdrawForm.handleSubmit(onWithdrawSubmit)} className="space-y-4">
-                    <FormField
-                      control={withdrawForm.control}
-                      name="method"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Choose withdrawal wallet</FormLabel>
-                          <FormControl>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a wallet" />
-                                </SelectTrigger>
-                              <SelectContent>
-                                {walletOptions.map((option) => (
-                                  <SelectItem key={option} value={option}>
-                                    {option}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField control={withdrawForm.control} name="accountHolder" render={({ field }) => ( <FormItem> <FormLabel>Account Holder Name</FormLabel> <FormControl> <Input placeholder="Your full name" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                    <FormField control={withdrawForm.control} name="accountNumber" render={({ field }) => ( <FormItem> <FormLabel>Account/Wallet Number</FormLabel> <FormControl> <Input placeholder="e.g. 03001234567" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                    <FormField control={withdrawForm.control} name="amount" render={({ field }) => ( <FormItem> <FormLabel>Amount (PKR)</FormLabel> <FormControl> <Input type="number" placeholder="500" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                   
-                    <Button type="submit" className="w-full" disabled={isWalletLoading}>
-                        {isWalletLoading ? 'Checking balance...' : 'Request Withdrawal'}
-                    </Button>
-                    </form>
-                </Form>
-                </CardContent>
-            </Card>
-            </TabsContent>
-        </Tabs>
-
+       <header>
+          <h1 className="text-3xl font-bold tracking-tight font-headline">Recharge</h1>
+          <p className="text-muted-foreground">Deposit funds into your wallet.</p>
+        </header>
+      <div className="grid gap-8 lg:grid-cols-5">
+        <div className="lg:col-span-2 space-y-4">
+            <h2 className="text-xl font-semibold font-headline">Admin Wallets</h2>
+            <p className="text-sm text-muted-foreground">Please send your deposit amount to one of the following accounts.</p>
+            {adminWallets.map(wallet => (
+              <Card key={wallet.name}>
+                  <CardHeader className="flex flex-row items-center gap-4 space-y-0">
+                      <Landmark className="w-8 h-8 text-primary"/>
+                      <div className="grid gap-1">
+                          <CardTitle>{wallet.name}</CardTitle>
+                          <CardDescription>{wallet.accountName}</CardDescription>
+                      </div>
+                  </CardHeader>
+                  <CardContent>
+                      <p className="text-lg font-mono tracking-wider">{wallet.accountNumber}</p>
+                  </CardContent>
+              </Card>
+            ))}
+        </div>
+        <div className="lg:col-span-3">
+          <Card>
+              <CardHeader>
+              <CardTitle>Deposit Funds</CardTitle>
+              <CardDescription>Fill the form after sending payment.</CardDescription>
+              </CardHeader>
+              <CardContent>
+              <Form {...depositForm}>
+                  <form onSubmit={depositForm.handleSubmit(onDepositSubmit)} className="space-y-4">
+                  <FormField control={depositForm.control} name="accountHolder" render={({ field }) => ( <FormItem> <FormLabel>Your Account Name</FormLabel> <FormControl> <Input placeholder="e.g. John Doe" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
+                  <FormField control={depositForm.control} name="accountNumber" render={({ field }) => ( <FormItem> <FormLabel>Your Account Number</FormLabel> <FormControl> <Input placeholder="e.g. 03001234567" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
+                  <FormField control={depositForm.control} name="amount" render={({ field }) => ( <FormItem> <FormLabel>Amount (PKR)</FormLabel> <FormControl> <Input type="number" placeholder="1000" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
+                  <FormField control={depositForm.control} name="transactionId" render={({ field }) => ( <FormItem> <FormLabel>Transaction ID (TID)</FormLabel> <FormControl> <Input placeholder="Enter the TID from your payment app" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
+                  <Button type="submit" className="w-full">Submit Deposit</Button>
+                  </form>
+              </Form>
+              </CardContent>
+          </Card>
+        </div>
+      </div>
         <Card>
             <CardHeader>
                 <CardTitle>Transaction History</CardTitle>
