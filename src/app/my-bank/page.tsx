@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,7 +9,6 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -26,14 +24,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 const bankAccountSchema = z.object({
   cardholderName: z.string().min(5, "Cardholder name must be between 5 and 30 characters.").max(30, "Cardholder name must be between 5 and 30 characters."),
   withdrawalMethod: z.string({ required_error: 'Please select a withdrawal method.' }),
-  walletOrBank: z.string().optional(),
   accountNumber: z.string().regex(/^03\d{9}$/, 'The wallet account must be an 11-digit number starting with 03.'),
   idNumber: z.string().min(1, "ID number is required."),
-  phoneNumber: z.string().regex(/^\d{10}$/, 'Please enter a valid 10-digit phone number.'),
 });
 
 export default function MyBankPage() {
-  const [withdrawalMethod, setWithdrawalMethod] = useState('');
 
   const form = useForm<z.infer<typeof bankAccountSchema>>({
     resolver: zodResolver(bankAccountSchema),
@@ -41,7 +36,6 @@ export default function MyBankPage() {
       cardholderName: '',
       accountNumber: '',
       idNumber: '',
-      phoneNumber: '',
     },
   });
 
@@ -82,62 +76,17 @@ export default function MyBankPage() {
                 name="withdrawalMethod"
                 render={({ field }) => (
                   <FormItem>
-                    <Select onValueChange={(value) => { field.onChange(value); setWithdrawalMethod(value); }} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Choose withdrawal method" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="jazzcash">JazzCash</SelectItem>
-                        <SelectItem value="easypaisa">Easypaisa</SelectItem>
-                        <SelectItem value="bank">Bank Account</SelectItem>
+                        <SelectItem value="bank">Bank account</SelectItem>
+                        <SelectItem value="wallet">Wallet account</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="walletOrBank"
-                render={({ field }) => (
-                  <FormItem>
-                     <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!withdrawalMethod}>
-                        <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder={withdrawalMethod ? `Select ${withdrawalMethod === 'bank' ? 'Bank' : 'Wallet'}` : "Please select the withdrawal method first"} />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {withdrawalMethod === 'bank' ? (
-                                <>
-                                    <SelectItem value="meezan">Meezan Bank</SelectItem>
-                                    <SelectItem value="hbl">HBL</SelectItem>
-                                    <SelectItem value="ubl">UBL</SelectItem>
-                                </>
-                            ) : (
-                                <>
-                                    <SelectItem value="jazzcash_wallet">JazzCash Wallet</SelectItem>
-                                    <SelectItem value="easypaisa_wallet">Easypaisa Wallet</SelectItem>
-                                </>
-                            )}
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="accountNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input placeholder="Wallet or bank account" {...field} />
-                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -158,7 +107,7 @@ export default function MyBankPage() {
               
               <FormField
                 control={form.control}
-                name="phoneNumber"
+                name="accountNumber"
                 render={({ field }) => (
                     <FormItem>
                         <div className="flex items-center gap-2">
@@ -174,8 +123,7 @@ export default function MyBankPage() {
                 )}
                 />
 
-
-              <div className="text-xs text-muted-foreground space-y-1">
+              <div className="text-xs text-muted-foreground space-y-1 pt-2">
                 <p>* Cardholder name (5-30 characters).</p>
                 <p>* The wallet account is an 11-digit number starting with 03.</p>
               </div>
