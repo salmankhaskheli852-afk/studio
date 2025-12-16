@@ -18,36 +18,40 @@ export default function InvestPage() {
       </header>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {investmentPlans.map((plan, index) => (
-          <Card key={plan.id} className="flex flex-col">
-            <CardHeader>
-              <div className="flex items-center gap-4">
-                {planIcons[index]}
-                <div>
-                  <CardTitle className="font-headline">{plan.name}</CardTitle>
-                  <CardDescription>Earn {plan.dailyReturn}% daily</CardDescription>
+        {investmentPlans.map((plan, index) => {
+          const dailyIncome = (plan.minInvest * plan.dailyReturn) / 100;
+          
+          return (
+            <Card key={plan.id} className="flex flex-col">
+              <CardHeader>
+                <div className="flex items-center gap-4">
+                  {planIcons[index]}
+                  <div>
+                    <CardTitle className="font-headline">{plan.name}</CardTitle>
+                    <CardDescription>Earn {plan.dailyReturn}% daily</CardDescription>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-grow space-y-4">
-              <div className="flex justify-between border-t pt-4">
-                <span className="text-muted-foreground">Term</span>
-                <span className="font-semibold">{plan.period} days</span>
-              </div>
-              <div className="flex justify-between border-t pt-4">
-                <span className="text-muted-foreground">Min. Investment</span>
-                <span className="font-semibold">PKR {plan.minInvest.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between border-t pt-4">
-                <span className="text-muted-foreground">Max. Investment</span>
-                <span className="font-semibold">PKR {plan.maxInvest.toLocaleString()}</span>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">Invest Now</Button>
-            </CardFooter>
-          </Card>
-        ))}
+              </CardHeader>
+              <CardContent className="flex-grow space-y-4">
+                <div className="flex justify-between border-t pt-4">
+                  <span className="text-muted-foreground">Term</span>
+                  <span className="font-semibold">{plan.period} days</span>
+                </div>
+                <div className="flex justify-between border-t pt-4">
+                  <span className="text-muted-foreground">Plan Price</span>
+                  <span className="font-semibold">PKR {plan.minInvest.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between border-t pt-4">
+                  <span className="text-muted-foreground">Daily Income</span>
+                  <span className="font-semibold">PKR {dailyIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">Invest Now</Button>
+              </CardFooter>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
