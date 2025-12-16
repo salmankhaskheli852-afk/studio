@@ -25,9 +25,33 @@ const bankAccountSchema = z.object({
   cardholderName: z.string().min(5, "Cardholder name must be between 5 and 30 characters.").max(30, "Cardholder name must be between 5 and 30 characters."),
   withdrawalMethod: z.string({ required_error: 'Please select a withdrawal method.' }),
   pleaseSelect: z.string({ required_error: 'Please select an option.'}),
-  accountNumber: z.string().regex(/^03\d{9}$/, 'The wallet account must be an 11-digit number starting with 03.'),
+  accountNumber: z.string().min(1, "Account number is required."),
   idNumber: z.string().min(1, "ID number is required."),
+  phoneNumber: z.string().regex(/^03\d{9}$/, 'The wallet account must be an 11-digit number starting with 03.'),
 });
+
+const bankOptions = [
+    "ALLIED BANK LTD.",
+    "ALBARAKA BANK (PAKISTAN) LTD.",
+    "ALFALAH BANK LTD.",
+    "ASKARI BANK LTD.",
+    "BANK AL-HABIB LTD.",
+    "BANK ISLAMI PAKISTAN LTD.",
+    "BANK OF PUNJAB",
+    "DUBAI ISLAMIC BANK PAKISTAN LTD.",
+    "FAYSAL BANK LTD.",
+    "FINCA Micro Finance Bank",
+    "FIRST WOMEN BANK LTD.",
+    "HABIB BANK LTD.",
+    "Mobilink Micro Finance Bank (JAZZCASH)",
+    "JS BANK LTD.",
+    "BANK OF KHYBER",
+    "MCB Islamic Bank Limited",
+    "MEEZAN BANK LTD.",
+    "HABIB METROPOLITAN BANK LTD."
+];
+
+const walletOptions = ["JazzCash", "Easypaisa"];
 
 export default function MyBankPage() {
 
@@ -37,8 +61,11 @@ export default function MyBankPage() {
       cardholderName: '',
       accountNumber: '',
       idNumber: '',
+      phoneNumber: '',
     },
   });
+
+  const withdrawalMethod = form.watch('withdrawalMethod');
 
   function onSubmit(values: z.infer<typeof bankAccountSchema>) {
     console.log(values);
@@ -77,7 +104,10 @@ export default function MyBankPage() {
                 name="withdrawalMethod"
                 render={({ field }) => (
                   <FormItem>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={(value) => {
+                      field.onChange(value);
+                      form.resetField('pleaseSelect');
+                    }} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Choose withdrawal method" />
@@ -98,15 +128,25 @@ export default function MyBankPage() {
                 name="pleaseSelect"
                 render={({ field }) => (
                   <FormItem>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} key={withdrawalMethod}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Please select" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="jazzcash">JazzCash</SelectItem>
-                        <SelectItem value="easypaisa">Easypaisa</SelectItem>
+                        {withdrawalMethod === 'bank' && bankOptions.map(bank => (
+                            <SelectItem key={bank} value={bank}>{bank}</SelectItem>
+                        ))}
+                        {withdrawalMethod === 'wallet' && walletOptions.map(wallet => (
+                            <SelectItem key={wallet} value={wallet}>{wallet}</SelectItem>
+                        ))}
+                         {withdrawalMethod !== 'bank' && withdrawalMethod !== 'wallet' && (
+                            <SelectItem value="jazzcash">JazzCash</SelectItem>
+                         )}
+                         {withdrawalMethod !== 'bank' && withdrawalMethod !== 'wallet' && (
+                            <SelectItem value="easypaisa">Easypaisa</SelectItem>
+                         )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -142,7 +182,7 @@ export default function MyBankPage() {
               
               <FormField
                 control={form.control}
-                name="accountNumber"
+                name="phoneNumber"
                 render={({ field }) => (
                     <FormItem>
                         <div className="flex items-center gap-2">
