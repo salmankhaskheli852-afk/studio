@@ -17,6 +17,41 @@
         "referralCode": {
           "type": "string",
           "description": "The unique referral code for the user."
+        },
+        "investments": {
+          "type": "array",
+          "description": "List of active investments for the user.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "planId": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "startDate": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "referrals": {
+          "type": "array",
+          "description": "List of users who have used this user's referral code.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "userId": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
         }
       },
       "required": [

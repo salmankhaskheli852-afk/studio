@@ -1,9 +1,36 @@
+'use client';
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DollarSign, TrendingUp, Users } from "lucide-react";
 import Link from "next/link";
+import { useUser, useDoc, useMemoFirebase } from "@/firebase";
+import { doc, collection } from "firebase/firestore";
+import { useFirestore } from "@/firebase/provider";
 
 export default function Home() {
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+
+  const userDocRef = useMemoFirebase(
+    () => (user ? doc(firestore, "users", user.uid) : null),
+    [firestore, user]
+  );
+  const { data: userData, isLoading: isUserDocLoading } = useDoc(userDocRef);
+
+  const walletDocRef = useMemoFirebase(
+    () => (user ? doc(firestore, `users/${user.uid}/wallet`, user.uid) : null),
+    [firestore, user]
+  );
+  const { data: walletData, isLoading: isWalletLoading } = useDoc(walletDocRef);
+
+  const isLoading = isUserLoading || isUserDocLoading || isWalletLoading;
+  
+  const balance = walletData?.balance ?? 0;
+  const activeInvestmentsCount = userData?.investments?.length ?? 0;
+  const activeInvestmentsNames = userData?.investments?.map(inv => inv.name).join(', ') || 'No active plans';
+  const totalReferrals = userData?.referrals?.length ?? 0;
+
   return (
     <div className="space-y-6">
       <header>
@@ -18,8 +45,12 @@ export default function Home() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">PKR 45,231.89</div>
-            <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+            {isLoading ? (
+              <div className="h-8 w-3/4 animate-pulse rounded-md bg-muted" />
+            ) : (
+              <div className="text-2xl font-bold">PKR {balance.toLocaleString()}</div>
+            )}
+            <p className="text-xs text-muted-foreground">Live balance</p>
           </CardContent>
         </Card>
         <Card>
@@ -28,8 +59,12 @@ export default function Home() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+2</div>
-            <p className="text-xs text-muted-foreground">Starter Plan, Pro Plan</p>
+            {isLoading ? (
+              <div className="h-8 w-1/4 animate-pulse rounded-md bg-muted" />
+            ) : (
+              <div className="text-2xl font-bold">+{activeInvestmentsCount}</div>
+            )}
+            <p className="text-xs text-muted-foreground">{isLoading ? 'Loading...' : activeInvestmentsNames}</p>
           </CardContent>
         </Card>
         <Card>
@@ -38,8 +73,12 @@ export default function Home() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+12</div>
-            <p className="text-xs text-muted-foreground">+5 since last week</p>
+            {isLoading ? (
+                <div className="h-8 w-1/4 animate-pulse rounded-md bg-muted" />
+            ) : (
+                <div className="text-2xl font-bold">+{totalReferrals}</div>
+            )}
+            <p className="text-xs text-muted-foreground">Your network</p>
           </CardContent>
         </Card>
       </div>
