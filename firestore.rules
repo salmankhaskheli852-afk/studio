@@ -90,6 +90,7 @@ service cloud.firestore {
      * @principle Enables admins to fetch all pending requests efficiently.
      */
      match /{path=**}/transactions/{transactionId} {
+       allow get: if isAdmin();
        allow list: if isAdmin();
      }
 
