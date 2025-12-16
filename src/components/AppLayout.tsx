@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Wallet, TrendingUp, Users, Menu, Landmark, LogOut, User as UserIcon } from "lucide-react";
+import { Home, TrendingUp, Users, Menu, Landmark, LogOut, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
@@ -13,7 +13,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 const navItems = [
   { href: "/", label: "Home", icon: Home },
   { href: "/invest", label: "Invest", icon: TrendingUp },
-  { href: "/wallet", label: "Wallet", icon: Wallet },
   { href: "/invite", label: "Invite", icon: Users },
 ];
 
