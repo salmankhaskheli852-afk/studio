@@ -11,6 +11,7 @@ import {
   LogOut,
   User as UserIcon,
   Banknote,
+  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -35,6 +36,7 @@ const navItems = [
   { href: '/invest', label: 'Invest', icon: TrendingUp },
   { href: '/invite', label: 'Invite', icon: Users },
   { href: '/my-bank', label: 'My Bank', icon: Banknote },
+  { href: '/admin', label: 'Admin', icon: Shield },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
