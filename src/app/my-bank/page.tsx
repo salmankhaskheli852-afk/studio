@@ -29,9 +29,9 @@ import { Landmark } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { Transaction } from "@/lib/data";
-import { useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { useFirestore } from '@/firebase/provider';
-import { collection, query, orderBy, limit, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, limit, addDoc, serverTimestamp, doc, runTransaction, increment } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 const depositSchema = z.object({
@@ -41,12 +41,12 @@ const depositSchema = z.object({
   transactionId: z.string().min(5, "Transaction ID is required"),
 });
 
-const bankAccountSchema = z.object({
-  cardholderName: z.string().min(2, 'Cardholder name is required'),
-  withdrawalMethod: z.enum(['wallet', 'bank']),
+const withdrawSchema = z.object({
+  method: z.string({ required_error: "Please select a method." }),
   bankName: z.string().optional(),
-  idNumber: z.string().min(5, 'ID number is required'),
-  phoneNumber: z.string().regex(/^(03\d{9})$/, "Enter a valid 11-digit number like 03001234567"),
+  accountHolder: z.string().min(2, "Name is too short"),
+  accountNumber: z.string().min(5, "Account number is required"),
+  amount: z.coerce.number().min(500, "Minimum withdrawal is 500 PKR"),
 });
 
 const walletOptions = ['JazzCash', 'Easypaisa'];
@@ -70,17 +70,25 @@ const bankOptions = [
     "United Bank Limited",
 ];
 
+
 export default function MyBankPage() {
-  const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("recharge");
+  const [withdrawalMethod, setWithdrawalMethod] = useState<'wallet' | 'bank'>('wallet');
 
   const transactionsQuery = useMemoFirebase(
     () => user ? query(collection(firestore, `users/${user.uid}/wallet/${user.uid}/transactions`), orderBy('timestamp', 'desc'), limit(15)) : null,
     [firestore, user]
   );
   const { data: transactions, isLoading: isLoadingTransactions } = useCollection<Transaction>(transactionsQuery);
+
+  const walletDocRef = useMemoFirebase(
+    () => (user ? doc(firestore, `users/${user.uid}/wallet`, user.uid) : null),
+    [firestore, user]
+  );
+  const { data: walletData, isLoading: isWalletLoading } = useDoc(walletDocRef);
 
   const depositForm = useForm<z.infer<typeof depositSchema>>({
     resolver: zodResolver(depositSchema),
@@ -92,24 +100,18 @@ export default function MyBankPage() {
     }
   });
 
-  const bankForm = useForm<z.infer<typeof bankAccountSchema>>({
-    resolver: zodResolver(bankAccountSchema),
+  const withdrawForm = useForm<z.infer<typeof withdrawSchema>>({
+    resolver: zodResolver(withdrawSchema),
     defaultValues: {
-      cardholderName: '',
-      withdrawalMethod: 'wallet',
-      bankName: '',
-      idNumber: '',
-      phoneNumber: '',
+        accountHolder: "",
+        accountNumber: "",
+        amount: 0,
     },
   });
 
   async function onDepositSubmit(values: z.infer<typeof depositSchema>) {
     if (!user || !firestore) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "You must be logged in to make a deposit.",
-      });
+      toast({ variant: "destructive", title: "Error", description: "You must be logged in to make a deposit." });
       return;
     }
 
@@ -123,32 +125,56 @@ export default function MyBankPage() {
         walletId: user.uid,
       });
 
-      toast({
-        title: "Deposit Submitted",
-        description: "Your deposit request has been submitted and is pending approval.",
-      });
+      toast({ title: "Deposit Submitted", description: "Your deposit request has been submitted and is pending approval." });
       depositForm.reset();
     } catch (error) {
       console.error("Error submitting deposit:", error);
-      toast({
-        variant: "destructive",
-        title: "Submission Failed",
-        description: "An error occurred while submitting your deposit. Please try again.",
-      });
+      toast({ variant: "destructive", title: "Submission Failed", description: "An error occurred while submitting your deposit." });
     }
   }
 
-  function onBankSubmit(values: z.infer<typeof bankAccountSchema>) {
-    console.log(values);
+  async function onWithdrawSubmit(values: z.infer<typeof withdrawSchema>) {
+    if (!user || !firestore) {
+      toast({ variant: "destructive", title: "Error", description: "You must be logged in to make a withdrawal." });
+      return;
+    }
+
+    const currentBalance = walletData?.balance ?? 0;
+    if (currentBalance < values.amount) {
+        toast({ variant: "destructive", title: "Insufficient Balance", description: "You do not have enough funds for this withdrawal." });
+        return;
+    }
+
+    try {
+        await runTransaction(firestore, async (transaction) => {
+            const walletRef = doc(firestore, `users/${user.uid}/wallet`, user.uid);
+            const transactionsColRef = collection(firestore, `users/${user.uid}/wallet/${user.uid}/transactions`);
+
+            // 1. Deduct balance immediately
+            transaction.update(walletRef, { balance: increment(-values.amount) });
+
+            // 2. Create pending withdrawal transaction
+            const newTransactionRef = doc(transactionsColRef); // create a reference to get the ID
+            transaction.set(newTransactionRef, {
+                ...values,
+                type: 'Withdrawal',
+                status: 'Pending',
+                amount: -values.amount, // Store as negative
+                timestamp: serverTimestamp(),
+                walletId: user.uid,
+            });
+        });
+
+        toast({ title: "Withdrawal Submitted", description: "Your withdrawal request has been submitted." });
+        withdrawForm.reset();
+    } catch (error) {
+        console.error("Error submitting withdrawal:", error);
+        toast({ variant: "destructive", title: "Submission Failed", description: "An error occurred while submitting your withdrawal." });
+    }
   }
   
-  const handleMethodChange = (value: string) => {
-    setSelectedMethod(value);
-    bankForm.setValue('bankName', '');
-  };
+  const currentOptions = withdrawalMethod === 'wallet' ? walletOptions : bankOptions;
 
-  const currentOptions = selectedMethod === 'wallet' ? walletOptions : bankOptions;
-  
   const getStatusBadgeVariant = (status?: Transaction["status"]) => {
     switch (status) {
       case "Completed":
@@ -165,7 +191,7 @@ export default function MyBankPage() {
 
   return (
     <div className="space-y-6">
-        <Tabs defaultValue="recharge" className="w-full">
+        <Tabs defaultValue="recharge" className="w-full" onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="recharge">Recharge</TabsTrigger>
             <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
@@ -199,58 +225,10 @@ export default function MyBankPage() {
                     <CardContent>
                     <Form {...depositForm}>
                         <form onSubmit={depositForm.handleSubmit(onDepositSubmit)} className="space-y-4">
-                        <FormField
-                          control={depositForm.control}
-                          name="accountHolder"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Your Account Name</FormLabel>
-                              <FormControl>
-                                <Input placeholder="e.g. John Doe" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={depositForm.control}
-                          name="accountNumber"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Your Account Number</FormLabel>
-                              <FormControl>
-                                <Input placeholder="e.g. 03001234567" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={depositForm.control}
-                          name="amount"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Amount (PKR)</FormLabel>
-                              <FormControl>
-                                <Input type="number" placeholder="1000" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={depositForm.control}
-                          name="transactionId"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Transaction ID (TID)</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Enter the TID from your payment app" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                        <FormField control={depositForm.control} name="accountHolder" render={({ field }) => ( <FormItem> <FormLabel>Your Account Name</FormLabel> <FormControl> <Input placeholder="e.g. John Doe" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
+                        <FormField control={depositForm.control} name="accountNumber" render={({ field }) => ( <FormItem> <FormLabel>Your Account Number</FormLabel> <FormControl> <Input placeholder="e.g. 03001234567" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
+                        <FormField control={depositForm.control} name="amount" render={({ field }) => ( <FormItem> <FormLabel>Amount (PKR)</FormLabel> <FormControl> <Input type="number" placeholder="1000" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
+                        <FormField control={depositForm.control} name="transactionId" render={({ field }) => ( <FormItem> <FormLabel>Transaction ID (TID)</FormLabel> <FormControl> <Input placeholder="Enter the TID from your payment app" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
                         <Button type="submit" className="w-full">Submit Deposit</Button>
                         </form>
                     </Form>
@@ -260,37 +238,24 @@ export default function MyBankPage() {
             </div>
             </TabsContent>
             <TabsContent value="withdraw">
-            <Card>
+            <Card className="max-w-2xl mx-auto">
                 <CardHeader>
-                <CardTitle>Add New Bank Account</CardTitle>
-                <CardDescription>Fill in the details below to add a new withdrawal method.</CardDescription>
+                <CardTitle>Request Withdrawal</CardTitle>
+                <CardDescription>Fill in the details below to request a withdrawal.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                <Form {...bankForm}>
-                    <form onSubmit={bankForm.handleSubmit(onBankSubmit)} className="space-y-4">
-                    <FormField
-                        control={bankForm.control}
-                        name="cardholderName"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Cardholder Name</FormLabel>
-                            <FormControl>
-                            <Input placeholder="Enter your full name" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={bankForm.control}
-                        name="withdrawalMethod"
+                <Form {...withdrawForm}>
+                    <form onSubmit={withdrawForm.handleSubmit(onWithdrawSubmit)} className="space-y-4">
+                     <FormField
+                        control={withdrawForm.control}
+                        name="method"
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel>Choose withdrawal method</FormLabel>
-                            <Select onValueChange={(value) => {
+                            <Select onValueChange={(value: 'wallet' | 'bank') => {
                                 field.onChange(value);
-                                handleMethodChange(value);
+                                setWithdrawalMethod(value);
+                                withdrawForm.setValue('bankName', '');
                             }} defaultValue={field.value}>
                             <FormControl>
                                 <SelectTrigger>
@@ -298,7 +263,7 @@ export default function MyBankPage() {
                                 </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                <SelectItem value="wallet">Wallet account</SelectItem>
+                                <SelectItem value="wallet">Wallet account (Jazzcash/Easypaisa)</SelectItem>
                                 <SelectItem value="bank">Bank account</SelectItem>
                             </SelectContent>
                             </Select>
@@ -307,9 +272,8 @@ export default function MyBankPage() {
                         )}
                     />
 
-                    {selectedMethod && (
-                        <FormField
-                        control={bankForm.control}
+                    <FormField
+                        control={withdrawForm.control}
                         name="bankName"
                         render={({ field }) => (
                             <FormItem>
@@ -317,12 +281,12 @@ export default function MyBankPage() {
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                 <SelectTrigger>
-                                    <SelectValue placeholder={`Select a ${selectedMethod === 'wallet' ? 'wallet' : 'bank'}`} />
+                                    <SelectValue placeholder={`Select a ${withdrawalMethod === 'wallet' ? 'wallet' : 'bank'}`} />
                                 </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
                                 {currentOptions.map((option) => (
-                                    <SelectItem key={option} value={option.toLowerCase().replace(/ /g, '_')}>
+                                    <SelectItem key={option} value={option}>
                                     {option}
                                     </SelectItem>
                                 ))}
@@ -332,38 +296,13 @@ export default function MyBankPage() {
                             </FormItem>
                         )}
                         />
-                    )}
 
-                    <FormField
-                        control={bankForm.control}
-                        name="idNumber"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>ID Number</FormLabel>
-                            <FormControl>
-                            <Input placeholder="Enter your account/wallet number" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={bankForm.control}
-                        name="phoneNumber"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Phone Number</FormLabel>
-                            <FormControl>
-                                <Input placeholder="03001234567" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-
-                    <Button type="submit" className="w-full">
-                        Add Account
+                    <FormField control={withdrawForm.control} name="accountHolder" render={({ field }) => ( <FormItem> <FormLabel>Account Holder Name</FormLabel> <FormControl> <Input placeholder="Your full name" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
+                    <FormField control={withdrawForm.control} name="accountNumber" render={({ field }) => ( <FormItem> <FormLabel>Account/Wallet Number</FormLabel> <FormControl> <Input placeholder="e.g. 03001234567 or Bank Account No." {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
+                    <FormField control={withdrawForm.control} name="amount" render={({ field }) => ( <FormItem> <FormLabel>Amount (PKR)</FormLabel> <FormControl> <Input type="number" placeholder="500" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
+                   
+                    <Button type="submit" className="w-full" disabled={isWalletLoading}>
+                        {isWalletLoading ? 'Checking balance...' : 'Request Withdrawal'}
                     </Button>
                     </form>
                 </Form>
@@ -400,7 +339,7 @@ export default function MyBankPage() {
                                 <TableCell>
                                     <Badge variant={getStatusBadgeVariant(transaction.status)}>{transaction.status}</Badge>
                                 </TableCell>
-                                <TableCell className={`text-right font-medium ${transaction.type === 'Deposit' ? 'text-emerald-600' : 'text-destructive'}`}>{transaction.amount.toLocaleString()}</TableCell>
+                                <TableCell className={`text-right font-medium ${transaction.type === 'Deposit' || transaction.amount > 0 ? 'text-emerald-600' : 'text-destructive'}`}>{Math.abs(transaction.amount).toLocaleString()}</TableCell>
                                 </TableRow>
                             ))
                         ) : (
@@ -415,5 +354,3 @@ export default function MyBankPage() {
     </div>
   );
 }
-
-    

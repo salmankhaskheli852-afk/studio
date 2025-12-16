@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useUser, useCollection, useMemoFirebase } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
-import { collection, query, where, Timestamp, orderBy } from "firebase/firestore";
+import { collection, query, where, Timestamp, orderBy, doc, getDoc, runTransaction } from "firebase/firestore";
 import { MoreHorizontal, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,12 +23,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import type { Transaction } from '@/lib/data';
+import { useToast } from '@/hooks/use-toast';
 
 type AppUser = {
   id: string;
   displayName: string;
   email: string;
   isAdmin?: boolean;
+  photoURL?: string;
+  referralCode?: string;
+  investments?: any[];
 };
 
 type UserWithTransactions = AppUser & { 
@@ -42,6 +46,7 @@ export function AdminClient() {
   const firestore = useFirestore();
   const [selectedUser, setSelectedUser] = useState<UserWithTransactions | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { toast } = useToast();
 
   const usersQuery = useMemoFirebase(
     () => (firestore && adminUser ? collection(firestore, 'users') : null),
@@ -57,7 +62,7 @@ export function AdminClient() {
 
   const userTransactionsQuery = useMemoFirebase(
     () =>
-      selectedUser
+      selectedUser && firestore
         ? query(
             collection(firestore, `users/${selectedUser.id}/wallet/${selectedUser.id}/transactions`),
             where('timestamp', '>=', sevenDaysAgo),
@@ -79,6 +84,28 @@ export function AdminClient() {
     setSelectedUser(userWithDetails);
     setIsModalOpen(true);
   };
+
+  const handleSetAdmin = async (userId: string, makeAdmin: boolean) => {
+    if (!firestore) return;
+    const userDocRef = doc(firestore, 'users', userId);
+    try {
+        await runTransaction(firestore, async (transaction) => {
+            transaction.update(userDocRef, { isAdmin: makeAdmin });
+        });
+        toast({
+            title: "Success",
+            description: `User role updated successfully.`
+        });
+        // Note: Manual refresh might be needed or optimistic UI update
+    } catch(e) {
+        console.error("Failed to update user role:", e);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: `Failed to update user role.`
+        });
+    }
+  }
   
   // Calculate totals when transactions data is available
   useMemo(() => {
@@ -86,8 +113,8 @@ export function AdminClient() {
         let totalEarned = 0;
         let totalWithdrawn = 0;
         transactions.forEach(t => {
-            if (t.type === 'Deposit' || t.type === 'Investment') { // Assuming Investment returns are positive
-                totalEarned += t.amount > 0 ? t.amount : 0;
+            if (t.type === 'Deposit' || t.type === 'Investment') { 
+                if(t.amount > 0) totalEarned += t.amount;
             } else if (t.type === 'Withdrawal') {
                 totalWithdrawn += Math.abs(t.amount);
             }
@@ -98,17 +125,16 @@ export function AdminClient() {
 
 
   if (isAdminLoading || areUsersLoading) {
-    return <div>Loading...</div>;
+    return <div className="flex justify-center items-center h-full">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"></div>
+      </div>;
   }
 
-  if (!adminUser) {
-    return <div>Please log in to view the admin panel.</div>;
-  }
 
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight font-headline">Admin Panel</h1>
+        <h1 className="text-3xl font-bold tracking-tight font-headline">User Dashboard</h1>
         <p className="text-muted-foreground">Manage all users and their data.</p>
       </header>
 
@@ -156,6 +182,9 @@ export function AdminClient() {
                                 View Details
                             </DropdownMenuItem>
                           </DialogTrigger>
+                           <DropdownMenuItem onClick={() => handleSetAdmin(u.id, !u.isAdmin)}>
+                                {u.isAdmin ? "Remove Admin" : "Make Admin"}
+                            </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
 
@@ -178,17 +207,19 @@ export function AdminClient() {
                                     <TableRow>
                                     <TableHead>Date</TableHead>
                                     <TableHead>Type</TableHead>
+                                     <TableHead>Status</TableHead>
                                     <TableHead>Amount</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {selectedUser.transactions.length > 0 ? selectedUser.transactions.map(t => (
                                         <TableRow key={t.id}>
-                                            <TableCell>{t.timestamp instanceof Date ? t.timestamp.toLocaleDateString() : new Date(t.timestamp).toLocaleDateString()}</TableCell>
+                                            <TableCell>{t.timestamp && (t.timestamp as any).seconds ? new Date((t.timestamp as any).seconds * 1000).toLocaleDateString() : 'N/A'}</TableCell>
                                             <TableCell>{t.type}</TableCell>
+                                            <TableCell>{t.status}</TableCell>
                                             <TableCell className={`${t.amount > 0 ? 'text-emerald-500' : 'text-red-500'}`}>{t.amount.toLocaleString()}</TableCell>
                                         </TableRow>
-                                    )) : <TableRow><TableCell colSpan={3} className="text-center">No transactions in the last 7 days.</TableCell></TableRow>}
+                                    )) : <TableRow><TableCell colSpan={4} className="text-center">No transactions in the last 7 days.</TableCell></TableRow>}
                                 </TableBody>
                                 </Table>
                             )}

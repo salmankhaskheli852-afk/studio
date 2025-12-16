@@ -3,7 +3,7 @@
  * Data Structure: All user data is nested under /users/{userId}, including their profile, wallet, and transactions. This path-based nesting is the primary security mechanism. Public data, such as /investment_plans and /admin_wallet_details, exists at the root level.
  * Key Security Decisions:
  *   - Users are strictly isolated and cannot read or write any data outside their own /users/{userId} document tree.
- *   - Admins (identified by a specific email address) can read all user data for moderation and support.
+ *   - Admins (identified by a specific email address) can read all user data and manage transactions.
  *   - Listing users from the root /users collection is restricted to admins only for security and privacy.
  *   - Collections like `investment_plans` and `admin_wallet_details` are publicly readable to allow the client app to function, but all write operations are disabled pending the implementation of a proper admin role system.
  * Denormalization for Authorization: The rules rely on the path structure `/users/{userId}/...` for authorization, which avoids costly `get()` calls to check ownership on nested documents like wallets or transactions. On document creation, the rules validate that internal IDs (e.g., a `userId` field) match the document's path to ensure relational integrity.
@@ -46,41 +46,52 @@ service cloud.firestore {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isOwner(userId) && request.resource.data.id == resource.data.id;
+      allow update: if isOwner(userId) || isAdmin();
       allow delete: if false;
     }
 
     /**
-     * @description Secures a user's wallet documents. A user has full control over their own wallets. Admins can read wallets.
+     * @description Secures a user's wallet documents. A user has full control over their own wallets. Admins can read and update wallets (for transaction approvals).
      * @path /users/{userId}/wallet/{walletId}
      * @allow The user 'user123' can (get) their own wallet document at `/users/user123/wallet/w_abc`.
      * @allow An admin can (get) the wallet of 'user123'.
      * @deny The user 'user456' cannot (create) a wallet for 'user123' at `/users/user123/wallet/w_xyz`.
-     * @principle Restricts access to a user's own data tree using path-based ownership, with an exception for admin reads.
+     * @principle Restricts access to a user's own data tree using path-based ownership, with an exception for admin reads and updates.
      */
     match /users/{userId}/wallet/{walletId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow update: if isOwner(userId) || isAdmin();
       allow delete: if isOwner(userId);
     }
 
     /**
-     * @description Secures a user's transaction history. Admins can view this history.
+     * @description Secures a user's transaction history. Admins can view this history and update status.
      * @path /users/{userId}/wallet/{walletId}/transactions/{transactionId}
      * @allow The user 'user123' can (create) a new transaction at `/users/user123/wallet/w_abc/transactions/t_123`.
-     * @allow An admin can (list) transactions for 'user123'.
+     * @allow An admin can (list) and (update) transactions for 'user123'.
      * @deny The user 'user456' cannot (list) transactions at `/users/user123/wallet/w_abc/transactions`.
-     * @principle Inherits ownership from the path, ensuring only the user can manage their financial records. Admins have read-only access.
+     * @principle Inherits ownership from the path, ensuring only the user can manage their financial records. Admins have read-only and status update access.
      */
     match /users/{userId}/wallet/{walletId}/transactions/{transactionId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId) && request.resource.data.walletId == walletId;
-      allow update: if isOwner(userId) && request.resource.data.walletId == resource.data.walletId;
+      allow update: if isOwner(userId) || isAdmin();
       allow delete: if isOwner(userId);
     }
+
+    /**
+     * @description Allows admins to query across all transaction subcollections.
+     * @path /users/{userId}/wallet/{walletId}/transactions/{transactionId}
+     * @allow An admin can perform a `collectionGroup` query on `transactions`.
+     * @deny A non-admin user cannot perform this query.
+     * @principle Enables admins to fetch all pending requests efficiently.
+     */
+     match /{path=**}/transactions/{transactionId} {
+       allow list: if isAdmin();
+     }
 
     /**
      * @description Manages investment plans, which are public to all users for reading.

@@ -4,7 +4,7 @@ import { useUser } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-const ADMIN_EMAIL = "salmankhaskheli885@gmail.com"; // IMPORTANT: Replace with your actual admin email
+const ADMIN_EMAIL = "salmankhaskheli885@gmail.com"; 
 
 export default function AdminPage() {
   const { user, isUserLoading } = useUser();
@@ -21,7 +21,9 @@ export default function AdminPage() {
   }, [user, isUserLoading, router]);
 
   if (isUserLoading || !user || user.email !== ADMIN_EMAIL) {
-    return <div>Loading or redirecting...</div>;
+    return <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"></div>
+      </div>;
   }
 
   return <AdminClient />;

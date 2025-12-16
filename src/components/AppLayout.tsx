@@ -12,6 +12,9 @@ import {
   User as UserIcon,
   Banknote,
   Shield,
+  LayoutDashboard,
+  ArrowDownToDot,
+  ArrowUpFromDot,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -32,11 +35,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const allNavItems = [
-  { href: '/', label: 'Home', icon: Home },
-  { href: '/invest', label: 'Invest', icon: TrendingUp },
-  { href: '/invite', label: 'Invite', icon: Users },
-  { href: '/my-bank', label: 'My Bank', icon: Banknote },
-  { href: '/admin', label: 'Admin', icon: Shield, adminOnly: true },
+  // User items
+  { href: '/', label: 'Home', icon: Home, adminOnly: false },
+  { href: '/invest', label: 'Invest', icon: TrendingUp, adminOnly: false },
+  { href: '/invite', label: 'Invite', icon: Users, adminOnly: false },
+  { href: '/my-bank', label: 'My Bank', icon: Banknote, adminOnly: false },
+  // Admin items
+  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, adminOnly: true },
+  { href: '/admin/deposits', label: 'Deposit Requests', icon: ArrowDownToDot, adminOnly: true },
+  { href: '/admin/withdrawals', label: 'Withdrawal Requests', icon: ArrowUpFromDot, adminOnly: true },
 ];
 
 const ADMIN_EMAIL = "salmankhaskheli885@gmail.com";
@@ -50,25 +57,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   
   const isAdmin = useMemo(() => user?.email === ADMIN_EMAIL, [user]);
 
+  // Redirect logic
   useEffect(() => {
     if (!isUserLoading && user) {
-        if (isAdmin && pathname !== '/admin') {
-            router.replace('/admin');
-        }
+      if (isAdmin && !pathname.startsWith('/admin')) {
+        router.replace('/admin');
+      } else if (!isAdmin && pathname.startsWith('/admin')) {
+        router.replace('/');
+      }
+    } else if (!isUserLoading && !user && pathname.startsWith('/admin')) {
+        router.replace('/login');
     }
   }, [user, isUserLoading, isAdmin, pathname, router]);
 
   const handleLogout = () => {
     if (auth) {
       auth.signOut();
+      router.push('/login');
     }
   };
 
   const navItems = useMemo(() => {
-    if (isAdmin) {
-      return allNavItems.filter(item => item.adminOnly);
-    }
-    return allNavItems.filter(item => !item.adminOnly);
+    return allNavItems.filter(item => item.adminOnly === isAdmin);
   }, [isAdmin]);
 
   const NavContent = () => (
@@ -98,6 +108,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       ))}
     </nav>
   );
+  
+  // Don't render the layout on the login page
+  if (pathname === '/login') {
+    return <>{children}</>;
+  }
+
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -154,12 +170,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile">
-                      <UserIcon className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
-                    </Link>
-                  </DropdownMenuItem>
+                  {!isAdmin && (
+                     <DropdownMenuItem asChild>
+                        <Link href="/profile">
+                          <UserIcon className="mr-2 h-4 w-4" />
+                          <span>Profile</span>
+                        </Link>
+                      </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
@@ -173,7 +191,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             )}
           </div>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/40">
           {children}
         </main>
       </div>
