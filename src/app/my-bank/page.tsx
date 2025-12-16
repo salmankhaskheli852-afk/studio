@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { adminWallets } from "@/lib/data";
 import { Landmark } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -95,7 +95,7 @@ export default function MyBankPage() {
     try {
       const transactionsColRef = collection(firestore, `users/${user.uid}/wallet/${user.uid}/transactions`);
       await addDoc(transactionsColRef, {
-        walletId: user.uid, // Correct field name
+        walletId: user.uid,
         type: 'Deposit',
         status: 'Pending',
         timestamp: serverTimestamp(),
