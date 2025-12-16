@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -22,9 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { adminWallets } from '@/lib/data';
-import { Landmark } from 'lucide-react';
-
+import { useState } from 'react';
 
 const depositSchema = z.object({
   accountHolder: z.string().min(2, "Name is too short"),
@@ -33,15 +31,37 @@ const depositSchema = z.object({
   transactionId: z.string().min(5, "Transaction ID is required"),
 });
 
-const withdrawSchema = z.object({
-  method: z.string({ required_error: "Please select a method." }),
-  accountHolder: z.string().min(2, "Name is too short"),
-  accountNumber: z.string().regex(/^(03\d{9})$/, "Enter a valid 11-digit number like 03001234567"),
-  amount: z.coerce.number().min(500, "Minimum withdrawal is 500 PKR"),
+const bankAccountSchema = z.object({
+  cardholderName: z.string().min(2, 'Cardholder name is required'),
+  withdrawalMethod: z.enum(['wallet', 'bank']),
+  bankName: z.string().optional(),
+  idNumber: z.string().min(5, 'ID number is required'),
+  phoneNumber: z.string().regex(/^(03\d{9})$/, "Enter a valid 11-digit number like 03001234567"),
 });
 
+const walletOptions = ['JazzCash', 'Easypaisa'];
+const bankOptions = [
+    "Allied Bank Limited",
+    "Askari Bank",
+    "Bank Alfalah",
+    "Bank Al-Habib",
+    "BankIslami Pakistan",
+    "Bank of Punjab",
+    "Dubai Islamic Bank",
+    "Faysal Bank",
+    "Habib Bank Limited",
+    "JS Bank",
+    "MCB Bank",
+    "Meezan Bank",
+    "National Bank of Pakistan",
+    "Soneri Bank",
+    "Standard Chartered Bank",
+    "Summit Bank",
+    "United Bank Limited",
+];
 
 export default function MyBankPage() {
+  const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
 
   const depositForm = useForm<z.infer<typeof depositSchema>>({
     resolver: zodResolver(depositSchema),
@@ -51,12 +71,14 @@ export default function MyBankPage() {
       transactionId: "",
     }
   });
-  const withdrawForm = useForm<z.infer<typeof withdrawSchema>>({
-    resolver: zodResolver(withdrawSchema),
+
+  const bankForm = useForm<z.infer<typeof bankAccountSchema>>({
+    resolver: zodResolver(bankAccountSchema),
     defaultValues: {
-        accountHolder: "",
-        accountNumber: "",
-    }
+      cardholderName: '',
+      idNumber: '',
+      phoneNumber: '',
+    },
   });
 
   function onDepositSubmit(values: z.infer<typeof depositSchema>) {
@@ -64,104 +86,203 @@ export default function MyBankPage() {
     // Handle deposit logic
   }
 
-  function onWithdrawSubmit(values: z.infer<typeof withdrawSchema>) {
+  function onBankSubmit(values: z.infer<typeof bankAccountSchema>) {
     console.log(values);
-    // Handle withdraw logic
   }
+  
+  const handleMethodChange = (value: string) => {
+    setSelectedMethod(value);
+    bankForm.setValue('bankName', '');
+  };
+
+  const currentOptions = selectedMethod === 'wallet' ? walletOptions : bankOptions;
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-3xl font-bold tracking-tight font-headline">Recharge & Withdraw</h1>
-        <p className="text-muted-foreground">Manage your funds.</p>
-      </header>
-       <div className="grid gap-8 lg:grid-cols-5">
-        <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-xl font-semibold font-headline">Admin Wallets</h2>
-          <p className="text-sm text-muted-foreground">Please send your deposit amount to one of the following accounts.</p>
-          {adminWallets.map(wallet => (
-            <Card key={wallet.name}>
-                <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-                    <Landmark className="w-8 h-8 text-primary"/>
-                    <div className="grid gap-1">
-                        <CardTitle>{wallet.name}</CardTitle>
-                        <CardDescription>{wallet.accountName}</CardDescription>
-                    </div>
+        <Tabs defaultValue="recharge" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="recharge">Recharge</TabsTrigger>
+            <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
+            </TabsList>
+            <TabsContent value="recharge">
+            <Card>
+                <CardHeader>
+                <CardTitle>Deposit Funds</CardTitle>
+                <CardDescription>Fill the form after sending payment.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-lg font-mono tracking-wider">{wallet.accountNumber}</p>
+                <Form {...depositForm}>
+                    <form onSubmit={depositForm.handleSubmit(onDepositSubmit)} className="space-y-4">
+                    <FormField
+                      control={depositForm.control}
+                      name="accountHolder"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Your Account Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. John Doe" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={depositForm.control}
+                      name="accountNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Your Account Number</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. 03001234567" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={depositForm.control}
+                      name="amount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Amount (PKR)</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="1000" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={depositForm.control}
+                      name="transactionId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Transaction ID (TID)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter the TID from your payment app" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="submit" className="w-full">Submit Deposit</Button>
+                    </form>
+                </Form>
                 </CardContent>
             </Card>
-          ))}
-        </div>
+            </TabsContent>
+            <TabsContent value="withdraw">
+            <Card>
+                <CardHeader>
+                <CardTitle>Add New Bank Account</CardTitle>
+                <CardDescription>Fill in the details below to add a new withdrawal method.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                <Form {...bankForm}>
+                    <form onSubmit={bankForm.handleSubmit(onBankSubmit)} className="space-y-4">
+                    <FormField
+                        control={bankForm.control}
+                        name="cardholderName"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Cardholder Name</FormLabel>
+                            <FormControl>
+                            <Input placeholder="Enter your full name" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
 
-        <div className="lg:col-span-3">
-            <Tabs defaultValue="recharge" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="recharge">Recharge</TabsTrigger>
-                <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
-                </TabsList>
-                <TabsContent value="recharge">
-                <Card>
-                    <CardHeader>
-                    <CardTitle>Deposit Funds</CardTitle>
-                    <CardDescription>Fill the form after sending payment.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                    <Form {...depositForm}>
-                        <form onSubmit={depositForm.handleSubmit(onDepositSubmit)} className="space-y-4">
-                        <FormField control={depositForm.control} name="accountHolder" render={({ field }) => ( <FormItem> <FormLabel>Your Account Name</FormLabel> <FormControl> <Input placeholder="e.g. John Doe" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                        <FormField control={depositForm.control} name="accountNumber" render={({ field }) => ( <FormItem> <FormLabel>Your Account Number</FormLabel> <FormControl> <Input placeholder="e.g. 03001234567" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                        <FormField control={depositForm.control} name="amount" render={({ field }) => ( <FormItem> <FormLabel>Amount (PKR)</FormLabel> <FormControl> <Input type="number" placeholder="1000" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                        <FormField control={depositForm.control} name="transactionId" render={({ field }) => ( <FormItem> <FormLabel>Transaction ID (TID)</FormLabel> <FormControl> <Input placeholder="Enter the TID from your payment app" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                        <Button type="submit" className="w-full">Submit Deposit</Button>
-                        </form>
-                    </Form>
-                    </CardContent>
-                </Card>
-                </TabsContent>
-                <TabsContent value="withdraw">
-                <Card>
-                    <CardHeader>
-                    <CardTitle>Withdraw Funds</CardTitle>
-                    <CardDescription>Request a withdrawal to your account.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                    <Form {...withdrawForm}>
-                        <form onSubmit={withdrawForm.handleSubmit(onWithdrawSubmit)} className="space-y-4">
+                    <FormField
+                        control={bankForm.control}
+                        name="withdrawalMethod"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Choose withdrawal method</FormLabel>
+                            <Select onValueChange={(value) => {
+                                field.onChange(value);
+                                handleMethodChange(value);
+                            }} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                <SelectValue placeholder="Select a method" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="wallet">Wallet account</SelectItem>
+                                <SelectItem value="bank">Bank account</SelectItem>
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+
+                    {selectedMethod && (
                         <FormField
-                            control={withdrawForm.control}
-                            name="method"
-                            render={({ field }) => (
+                        control={bankForm.control}
+                        name="bankName"
+                        render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Withdrawal Method</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormLabel>Please select</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
-                                    <SelectTrigger>
-                                    <SelectValue placeholder="Select a method" />
-                                    </SelectTrigger>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={`Select a ${selectedMethod === 'wallet' ? 'wallet' : 'bank'}`} />
+                                </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    <SelectItem value="jazzcash">JazzCash</SelectItem>
-                                    <SelectItem value="easypaisa">Easypaisa</SelectItem>
+                                {currentOptions.map((option) => (
+                                    <SelectItem key={option} value={option.toLowerCase().replace(/ /g, '_')}>
+                                    {option}
+                                    </SelectItem>
+                                ))}
                                 </SelectContent>
-                                </Select>
-                                <FormMessage />
+                            </Select>
+                            <FormMessage />
                             </FormItem>
-                            )}
+                        )}
                         />
-                        <FormField control={withdrawForm.control} name="accountHolder" render={({ field }) => ( <FormItem> <FormLabel>Account Holder Name</FormLabel> <FormControl> <Input placeholder="e.g. John Doe" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                        <FormField control={withdrawForm.control} name="accountNumber" render={({ field }) => ( <FormItem> <FormLabel>Account Number</FormLabel> <FormControl> <Input placeholder="e.g. 03001234567" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                        <FormField control={withdrawForm.control} name="amount" render={({ field }) => ( <FormItem> <FormLabel>Amount (PKR)</FormLabel> <FormControl> <Input type="number" placeholder="500" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-                        <Button type="submit" className="w-full">Request Withdrawal</Button>
-                        </form>
-                    </Form>
-                    </CardContent>
-                </Card>
-                </TabsContent>
-            </Tabs>
-        </div>
-      </div>
+                    )}
+
+                    <FormField
+                        control={bankForm.control}
+                        name="idNumber"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>ID Number</FormLabel>
+                            <FormControl>
+                            <Input placeholder="Enter your account/wallet number" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+
+                    <FormField
+                        control={bankForm.control}
+                        name="phoneNumber"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Phone Number</FormLabel>
+                            <FormControl>
+                                <Input placeholder="03001234567" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+
+                    <Button type="submit" className="w-full">
+                        Add Account
+                    </Button>
+                    </form>
+                </Form>
+                </CardContent>
+            </Card>
+            </TabsContent>
+        </Tabs>
     </div>
   );
 }
