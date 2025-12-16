@@ -45,12 +45,12 @@ service cloud.firestore {
 
     /**
      * @description Secures a user's wallet documents. A user has full control over their own wallets.
-     * @path /users/{userId}/wallets/{walletId}
-     * @allow The user 'user123' can (get) their own wallet document at `/users/user123/wallets/w_abc`.
-     * @deny The user 'user456' cannot (create) a wallet for 'user123' at `/users/user123/wallets/w_xyz`.
+     * @path /users/{userId}/wallet/{walletId}
+     * @allow The user 'user123' can (get) their own wallet document at `/users/user123/wallet/w_abc`.
+     * @deny The user 'user456' cannot (create) a wallet for 'user123' at `/users/user123/wallet/w_xyz`.
      * @principle Restricts access to a user's own data tree using path-based ownership.
      */
-    match /users/{userId}/wallets/{walletId} {
+    match /users/{userId}/wallet/{walletId} {
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
