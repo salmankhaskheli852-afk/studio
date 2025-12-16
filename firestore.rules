@@ -3,7 +3,7 @@
  * Data Structure: All user data is nested under /users/{userId}, including their profile, wallet, and transactions. This path-based nesting is the primary security mechanism. Public data, such as /investment_plans and /admin_wallet_details, exists at the root level.
  * Key Security Decisions:
  *   - Users are strictly isolated and cannot read or write any data outside their own /users/{userId} document tree.
- *   - Admins (identified by a custom claim `isAdmin: true` or a field `isAdmin: true` in their own user document) can read all user data for moderation and support.
+ *   - Admins (identified by a custom claim `isAdmin: true` OR a field `isAdmin: true` in their own user document) can read all user data for moderation and support.
  *   - Listing users from the root /users collection is restricted to admins only for security and privacy.
  *   - Collections like `investment_plans` and `admin_wallet_details` are publicly readable to allow the client app to function, but all write operations are disabled pending the implementation of a proper admin role system.
  * Denormalization for Authorization: The rules rely on the path structure `/users/{userId}/...` for authorization, which avoids costly `get()` calls to check ownership on nested documents like wallets or transactions. On document creation, the rules validate that internal IDs (e.g., a `userId` field) match the document's path to ensure relational integrity.
@@ -22,12 +22,15 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-    
+
     // Checks if the user has an 'isAdmin' custom claim OR if their user document has isAdmin: true.
     function isAdmin() {
-      return isSignedIn() && (request.auth.token.isAdmin == true || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+      let isClaimAdmin = request.auth.token.isAdmin == true;
+      let isDocAdmin = exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      return isSignedIn() && (isClaimAdmin || isDocAdmin);
     }
-
+    
     // For update/delete, ensures the document exists AND the user is the owner.
     // This prevents modifying non-existent data and provides a single, robust check.
     function isExistingOwner(userId) {
