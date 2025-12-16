@@ -283,21 +283,21 @@ export default function MyBankPage() {
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel>Choose withdrawal method</FormLabel>
-                            <FormControl>
-                                <Select onValueChange={(value: 'wallet' | 'bank') => {
-                                        field.onChange(value);
-                                        setWithdrawalMethod(value);
-                                        withdrawForm.setValue('bankName', '');
-                                    }} defaultValue={field.value}>
+                             <Select onValueChange={(value: 'wallet' | 'bank') => {
+                                field.onChange(value);
+                                setWithdrawalMethod(value);
+                                withdrawForm.setValue('bankName', '');
+                            }} defaultValue={field.value}>
+                                <FormControl>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select a method" />
                                     </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="wallet">Wallet account (Jazzcash/Easypaisa)</SelectItem>
-                                        <SelectItem value="bank">Bank account</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </FormControl>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="wallet">Wallet account (Jazzcash/Easypaisa)</SelectItem>
+                                    <SelectItem value="bank">Bank account</SelectItem>
+                                </SelectContent>
+                            </Select>
                             <FormMessage />
                         </FormItem>
                         )}
@@ -309,20 +309,20 @@ export default function MyBankPage() {
                         render={({ field }) => (
                             <FormItem>
                             <FormLabel>Please select</FormLabel>
-                            <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
+                             <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
                                     <SelectTrigger>
                                         <SelectValue placeholder={`Select a ${withdrawalMethod === 'wallet' ? 'wallet' : 'bank'}`} />
                                     </SelectTrigger>
-                                    <SelectContent>
-                                    {currentOptions.map((option) => (
-                                        <SelectItem key={option} value={option}>
-                                        {option}
-                                        </SelectItem>
-                                    ))}
-                                    </SelectContent>
-                                </Select>
-                            </FormControl>
+                                </FormControl>
+                                <SelectContent>
+                                {currentOptions.map((option) => (
+                                    <SelectItem key={option} value={option}>
+                                    {option}
+                                    </SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
                             <FormMessage />
                             </FormItem>
                         )}
