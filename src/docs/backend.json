@@ -60,6 +60,10 @@
         "isAdmin": {
           "type": "boolean",
           "description": "Flag to indicate if the user has admin privileges."
+        },
+        "disabled": {
+          "type": "boolean",
+          "description": "Flag to indicate if the user account is disabled/blocked."
         }
       },
       "required": [

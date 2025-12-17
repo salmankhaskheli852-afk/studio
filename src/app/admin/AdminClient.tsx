@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useUser, useCollection, useMemoFirebase } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
-import { collection, query, runTransaction, getDocs, collectionGroup, doc } from "firebase/firestore";
-import { MoreHorizontal, ShieldCheck, Search } from "lucide-react";
+import { collection, query, getDocs, collectionGroup } from "firebase/firestore";
+import { MoreHorizontal, ShieldCheck, Search, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,10 +15,23 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import type { Transaction } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { AdminStats } from '@/components/AdminStats';
+import { blockUser, deleteUser } from './actions';
 
 type AppUser = {
   id: string;
@@ -28,6 +41,7 @@ type AppUser = {
   photoURL?: string;
   referralCode?: string;
   investments?: any[];
+  disabled?: boolean;
 };
 
 export function AdminClient() {
@@ -45,12 +59,13 @@ export function AdminClient() {
   });
   const [isStatsLoading, setIsStatsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isActionLoading, setIsActionLoading] = useState<string | null>(null);
 
   const usersQuery = useMemoFirebase(
     () => (firestore && adminUser ? collection(firestore, 'users') : null),
     [firestore, adminUser]
   );
-  const { data: users, isLoading: areUsersLoading } = useCollection<AppUser>(usersQuery);
+  const { data: users, isLoading: areUsersLoading, forceRefresh } = useCollection<AppUser>(usersQuery);
 
   const filteredUsers = useMemo(() => {
     if (!users) return [];
@@ -78,8 +93,8 @@ export function AdminClient() {
       querySnapshot.forEach(doc => {
           const t = doc.data() as Transaction;
           if (t.type === 'Investment' && t.status === 'Completed') {
-              investments += Math.abs(t.amount); // Assuming investment amount is stored
-              earnings += t.amount; // Placeholder for actual earnings logic
+              investments += Math.abs(t.amount); 
+              earnings += t.amount; 
           }
           if (t.type === 'Deposit') {
               if(t.status === 'Completed') deposits += t.amount;
@@ -106,26 +121,38 @@ export function AdminClient() {
   }, [allTransactionsQuery]);
 
 
-  const handleSetAdmin = async (userId: string, makeAdmin: boolean) => {
-    if (!firestore) return;
-    const userDocRef = doc(firestore, 'users', userId);
+  const handleAction = async (action: 'block' | 'unblock' | 'delete', targetUser: AppUser) => {
+    setIsActionLoading(targetUser.id);
     try {
-        await runTransaction(firestore, async (transaction) => {
-            transaction.update(userDocRef, { isAdmin: makeAdmin });
-        });
-        toast({
-            title: "Success",
-            description: `User role updated successfully.`
-        });
-    } catch(e) {
-        console.error("Failed to update user role:", e);
+        let result;
+        if (action === 'delete') {
+            result = await deleteUser(targetUser.id);
+        } else {
+            const shouldBlock = action === 'block';
+            result = await blockUser(targetUser.id, shouldBlock);
+        }
+
+        if (result.success) {
+            toast({
+                title: "Success",
+                description: result.message,
+            });
+            forceRefresh(); // Refresh user list data
+        } else {
+            throw new Error(result.message);
+        }
+    } catch(e: any) {
+        console.error(`Failed to ${action} user:`, e);
         toast({
             variant: "destructive",
             title: "Error",
-            description: `Failed to update user role.`
+            description: e.message || `Failed to ${action} user.`
         });
+    } finally {
+        setIsActionLoading(null);
     }
   }
+
 
   if (isAdminLoading || areUsersLoading) {
     return <div className="flex justify-center items-center h-full">
@@ -175,33 +202,58 @@ export function AdminClient() {
                 <TableHead>User ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredUsers?.map((u) => (
-                <TableRow key={u.id}>
+                <TableRow key={u.id} className={isActionLoading === u.id ? 'opacity-50' : ''}>
                   <TableCell className="font-mono">{u.id}</TableCell>
                   <TableCell className="font-medium">{u.displayName}</TableCell>
                   <TableCell>{u.email}</TableCell>
+                   <TableCell>
+                    {u.disabled ? <span className="flex items-center gap-2 text-destructive font-semibold"><Ban className="h-4 w-4"/> Blocked</span> : <span className="text-emerald-600">Active</span>}
+                  </TableCell>
                    <TableCell>
                     {u.isAdmin ? <span className="flex items-center gap-2 text-primary font-semibold"><ShieldCheck className="h-4 w-4"/> Admin</span> : "User"}
                   </TableCell>
                   <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
+                          <Button variant="ghost" size="icon" disabled={isActionLoading === u.id}>
+                            {isActionLoading === u.id ? <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-primary"></div> : <MoreHorizontal className="h-4 w-4" />}
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
                             <DropdownMenuItem asChild>
                                <Link href={`/admin/users/${u.id}`}>View Details</Link>
                             </DropdownMenuItem>
-                           <DropdownMenuItem onClick={() => handleSetAdmin(u.id, !u.isAdmin)}>
+                           <DropdownMenuItem disabled>
                                 {u.isAdmin ? "Remove Admin" : "Make Admin"}
                             </DropdownMenuItem>
+                           <DropdownMenuSeparator />
+                           <DropdownMenuItem onClick={() => handleAction(u.disabled ? 'unblock' : 'block', u)}>
+                                {u.disabled ? "Unblock User" : "Block User"}
+                            </DropdownMenuItem>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">Delete User</DropdownMenuItem>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will permanently delete the user <span className="font-bold">{u.displayName}</span> and all their associated data (wallet, transactions, etc.). This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleAction('delete', u)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                         </DropdownMenuContent>
                       </DropdownMenu>
                   </TableCell>
