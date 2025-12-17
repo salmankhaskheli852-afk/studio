@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -29,6 +30,7 @@ const settingsSchema = z.object({
     withdrawalJazzCashEnabled: z.boolean().default(true),
     withdrawalEasypaisaEnabled: z.boolean().default(true),
     withdrawalBankEnabled: z.boolean().default(true),
+    customerCareWhatsapp: z.string().optional(),
 });
 
 const walletSchema = z.object({
@@ -72,6 +74,7 @@ export default function SettingsPage() {
             withdrawalJazzCashEnabled: true,
             withdrawalEasypaisaEnabled: true,
             withdrawalBankEnabled: true,
+            customerCareWhatsapp: '',
         }
     });
 
@@ -324,9 +327,41 @@ export default function SettingsPage() {
                            </div>
                         </CardContent>
                     </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Customer Care</CardTitle>
+                            <CardDescription>Set the WhatsApp number for customer support.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <FormField
+                                control={settingsForm.control}
+                                name="customerCareWhatsapp"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>WhatsApp Number</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder="e.g., 923001234567"
+                                                {...field}
+                                                value={field.value ?? ''}
+                                            />
+                                        </FormControl>
+                                        <FormDescription>
+                                            Include country code without '+' or '00'. Users will be directed to this number.
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </CardContent>
+                    </Card>
+
                     <Button type="submit" size="lg" className="w-full md:w-auto" disabled={settingsForm.formState.isSubmitting}>Save All Settings</Button>
                 </form>
             </Form>
         </div>
     );
 }
+
+    

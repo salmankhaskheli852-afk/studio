@@ -60,12 +60,18 @@
         "disabled": {
           "type": "boolean",
           "description": "Flag to indicate if the user account is disabled/blocked."
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the user.",
+          "enum": ["user", "admin"]
         }
       },
       "required": [
         "id",
         "googleId",
-        "referralCode"
+        "referralCode",
+        "role"
       ]
     },
     "Wallet": {
@@ -266,7 +272,11 @@
             "depositEasypaisaEnabled": { "type": "boolean" },
             "withdrawalJazzCashEnabled": { "type": "boolean" },
             "withdrawalEasypaisaEnabled": { "type": "boolean" },
-            "withdrawalBankEnabled": { "type": "boolean" }
+            "withdrawalBankEnabled": { "type": "boolean" },
+            "customerCareWhatsapp": {
+                "type": "string",
+                "description": "The WhatsApp number for customer care."
+            }
         },
         "required": [
             "id",

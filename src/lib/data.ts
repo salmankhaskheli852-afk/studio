@@ -1,3 +1,4 @@
+
 export type InvestmentPlan = {
   id: string;
   name: string;
@@ -45,4 +46,7 @@ export type AppSettings = {
     withdrawalJazzCashEnabled: boolean;
     withdrawalEasypaisaEnabled: boolean;
     withdrawalBankEnabled: boolean;
+    customerCareWhatsapp?: string;
 }
+
+    

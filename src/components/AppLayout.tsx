@@ -20,6 +20,7 @@ import {
   Settings,
   Package,
   RefreshCw,
+  LifeBuoy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -61,6 +62,8 @@ const allNavItems = [
   { href: '/admin/withdrawals', label: 'Withdrawal Requests', icon: ArrowUpFromDot, roles: ['admin'] },
   { href: '/admin/investments', label: 'Investments', icon: Package, roles: ['admin'] },
   { href: '/admin/settings', label: 'Settings', icon: Settings, roles: ['admin'] },
+  // Common items (but handled separately)
+  // { href: '#', label: 'Customer Service', icon: LifeBuoy, roles: ['user', 'admin'] },
 ];
 
 const ADMIN_EMAIL = "salmankhaskheli885@gmail.com";
@@ -121,6 +124,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return allNavItems.filter(item => item.roles.includes(userRole));
   }, [userRole]);
 
+  const whatsappLink = appSettings?.customerCareWhatsapp 
+    ? `https://wa.me/${appSettings.customerCareWhatsapp.replace(/[^0-9]/g, '')}` 
+    : null;
+
   const NavContent = () => (
     <nav className="flex flex-col gap-4">
       <Link
@@ -147,6 +154,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {item.label}
         </Link>
       ))}
+      {whatsappLink && (
+        <a
+          href={whatsappLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => setSheetOpen(false)}
+          className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+        >
+          <LifeBuoy className="h-4 w-4" />
+          Customer Service
+        </a>
+      )}
     </nav>
   );
   
@@ -251,3 +270,5 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
+    
