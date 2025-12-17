@@ -60,7 +60,7 @@
         "role": {
           "type": "string",
           "description": "The role of the user, which determines their access level.",
-          "enum": ["user", "localAdmin", "proAdmin"]
+          "enum": ["user", "admin"]
         },
         "disabled": {
           "type": "boolean",
@@ -297,7 +297,7 @@
     "customClaims": {
       "role": {
         "type": "string",
-        "enum": ["user", "localAdmin", "proAdmin"]
+        "enum": ["user", "admin"]
       }
     }
   },
@@ -407,3 +407,5 @@
     "reasoning": "The Firestore data structure is designed to ensure authorization independence, clarity, and scalability for the InvestPro Wallet application. It leverages path-based ownership for user-specific data and structural segregation to maintain a homogeneous security posture within each collection. Denormalization is employed to avoid `get()` calls in security rules and ensure atomic operations.\n\n*   **Users:** Each user has their own document in the `/users` collection. This allows for simple, path-based security rules that restrict access to a user's data only to themselves. Admins are granted read access to all user documents for management purposes.\n*   **Wallets:** Each user has a single associated wallet stored in `/users/{userId}/wallet`. Path-based ownership ensures only the user can access their wallet.\n*   **Transactions:** Each wallet has multiple transactions, stored in `/users/{userId}/wallet/transactions/{transactionId}`. Again, path-based ownership ensures only the user can access their transactions.\n*   **Investment Plans & Categories:** Investment plans and their categories are stored in root-level collections. These are globally accessible for reading but writes are restricted to admins.\n*   **App Settings:** A single document at `/app_settings/global` stores settings like transaction limits and maintenance mode status, allowing public read access for the client and write access only for admins."
   }
 }
+
+    

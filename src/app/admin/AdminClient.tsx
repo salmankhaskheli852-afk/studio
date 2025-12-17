@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useUser, useCollection, useMemoFirebase } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
 import { collection, query, getDocs, collectionGroup } from "firebase/firestore";
-import { MoreHorizontal, ShieldCheck, Search, Ban, UserCheck, UserX, Crown } from "lucide-react";
+import { MoreHorizontal, ShieldCheck, Search, Ban, UserCheck, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,10 +16,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
@@ -41,7 +37,7 @@ type AppUser = {
   id: string;
   displayName: string;
   email: string;
-  role?: 'user' | 'localAdmin' | 'proAdmin';
+  role?: 'user' | 'admin';
   photoURL?: string;
   referralCode?: string;
   investments?: any[];
@@ -163,10 +159,8 @@ export function AdminClient() {
 
   const getRoleBadge = (role?: AppUser['role']) => {
     switch (role) {
-      case 'proAdmin':
-        return <span className="flex items-center gap-2 text-amber-600 font-semibold"><Crown className="h-4 w-4"/> Pro Admin</span>;
-      case 'localAdmin':
-        return <span className="flex items-center gap-2 text-primary font-semibold"><ShieldCheck className="h-4 w-4"/> Local Admin</span>;
+      case 'admin':
+        return <span className="flex items-center gap-2 text-primary font-semibold"><ShieldCheck className="h-4 w-4"/> Admin</span>;
       default:
         return "User";
     }
@@ -249,29 +243,17 @@ export function AdminClient() {
                             <DropdownMenuItem asChild>
                                <Link href={`/admin/users/${u.id}`}>View Details</Link>
                             </DropdownMenuItem>
-                            <DropdownMenuSub>
-                                <DropdownMenuSubTrigger>
+                            {u.role !== 'admin' ? (
+                                <DropdownMenuItem onClick={() => handleAction('setRole', u, 'admin')}>
                                     <UserCheck className="mr-2 h-4 w-4" />
-                                    <span>Set Role</span>
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuPortal>
-                                <DropdownMenuSubContent>
-                                    <DropdownMenuItem onClick={() => handleAction('setRole', u, 'proAdmin')}>
-                                        <Crown className="mr-2 h-4 w-4" />
-                                        <span>Pro Admin</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleAction('setRole', u, 'localAdmin')}>
-                                        <ShieldCheck className="mr-2 h-4 w-4" />
-                                        <span>Local Admin</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={() => handleAction('setRole', u, 'user')}>
-                                        <UserX className="mr-2 h-4 w-4" />
-                                        <span>Remove Admin (Set to User)</span>
-                                    </DropdownMenuItem>
-                                </DropdownMenuSubContent>
-                                </DropdownMenuPortal>
-                            </DropdownMenuSub>
+                                    <span>Make Admin</span>
+                                </DropdownMenuItem>
+                            ) : (
+                                <DropdownMenuItem onClick={() => handleAction('setRole', u, 'user')}>
+                                    <UserX className="mr-2 h-4 w-4" />
+                                    <span>Remove Admin</span>
+                                </DropdownMenuItem>
+                            )}
                            <DropdownMenuSeparator />
                            <DropdownMenuItem onClick={() => handleAction(u.disabled ? 'unblock' : 'block', u)}>
                                 {u.disabled ? "Unblock User" : "Block User"}
@@ -305,3 +287,5 @@ export function AdminClient() {
     </div>
   );
 }
+
+    

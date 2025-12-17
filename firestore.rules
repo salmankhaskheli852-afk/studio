@@ -1,14 +1,4 @@
-/**
- * Core Philosophy: This ruleset enforces a strict user-ownership model where all user-specific data is private and can only be accessed by the authenticated owner. Global configuration data (like investment plans) is public to read but write-protected. Admins have special privileges to read all user data.
- * Data Structure: All user data is nested under /users/{userId}, including their profile, wallet, and transactions. This path-based nesting is the primary security mechanism. Public data, such as /investment_plans and /admin_wallet_details, exists at the root level.
- * Key Security Decisions:
- *   - Users are strictly isolated and cannot read or write any data outside their own /users/{userId} document tree.
- *   - Admins (identified by custom claims `role`) can read user data and manage transactions based on their level.
- *   - Listing users from the root /users collection is restricted to admins only for security and privacy.
- *   - Collections like `investment_plans` and `admin_wallet_details` are publicly readable to allow the client app to function, but all write operations are restricted to Pro Admins.
- * Denormalization for Authorization: The rules rely on the path structure `/users/{userId}/...` for authorization, which avoids costly `get()` calls to check ownership on nested documents like wallets or transactions. On document creation, the rules validate that internal IDs (e.g., a `userId` field) match the document's path to ensure relational integrity.
- * Structural Segregation: User-private data (`/users/{userId/...}`) is kept in a separate hierarchy from globally-public data (`/investment_plans`), which simplifies security and makes list operations safe and performant.
- */
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -22,16 +12,8 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isProAdmin() {
-      return isSignedIn() && (request.auth.token.role == "proAdmin" || request.auth.token.email == "salmankhaskheli885@gmail.com");
-    }
-
-    function isLocalAdmin() {
-      return isSignedIn() && request.auth.token.role == "localAdmin";
-    }
-    
     function isAdmin() {
-      return isProAdmin() || isLocalAdmin();
+      return isSignedIn() && (request.auth.token.role == "admin" || request.auth.token.email == "salmankhaskheli885@gmail.com");
     }
     
     function isExistingOwner(userId) {
@@ -39,16 +21,16 @@ service cloud.firestore {
     }
 
     /**
-     * @description Manages user profile documents. Users can create and manage their own profile. Pro Admins can read/update all profiles.
+     * @description Manages user profile documents. Users can create and manage their own profile. Admins can read/update all profiles.
      * @path /users/{userId}
-     * @principle Enforces self-management for users and full control for Pro Admins. User listing is restricted.
+     * @principle Enforces self-management for users and full control for Admins. User listing is restricted.
      */
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
       allow update: if isOwner(userId) || isAdmin();
-      allow delete: if isProAdmin();
+      allow delete: if isAdmin();
     }
 
     /**
@@ -90,53 +72,55 @@ service cloud.firestore {
     /**
      * @description Manages investment plan categories.
      * @path /investment_categories/{categoryId}
-     * @principle Public Read with Pro Admin-Only Writes.
+     * @principle Public Read with Admin-Only Writes.
      */
     match /investment_categories/{categoryId} {
         allow get: if true;
         allow list: if true;
-        allow create: if isProAdmin();
-        allow update: if isProAdmin();
-        allow delete: if isProAdmin();
+        allow create: if isAdmin();
+        allow update: if isAdmin();
+        allow delete: if isAdmin();
     }
 
     /**
      * @description Manages investment plans, which are public to all users for reading.
      * @path /investment_plans/{investmentPlanId}
-     * @principle Public Read with Pro Admin-Only Writes.
+     * @principle Public Read with Admin-Only Writes.
      */
     match /investment_plans/{investmentPlanId} {
       allow get: if true;
       allow list: if true;
-      allow create: if isProAdmin();
-      allow update: if isProAdmin();
-      allow delete: if isProAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     /**
      * @description Manages admin wallet details for user deposits. This data is public for viewing.
      * @path /admin_wallet_details/{adminWalletDetailId}
-     * @principle Public Read with Pro Admin-Only Writes.
+     * @principle Public Read with Admin-Only Writes.
      */
     match /admin_wallet_details/{adminWalletDetailId} {
       allow get: if true;
       allow list: if true;
-      allow create: if isProAdmin();
-      allow update: if isProAdmin();
-      allow delete: if isProAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     /**
      * @description Manages global application settings like transaction limits.
      * @path /app_settings/{settingsId}
-     * @principle Public read for client-side rules, Pro Admin-only write for configuration.
+     * @principle Public read for client-side rules, Admin-only write for configuration.
      */
     match /app_settings/{settingsId} {
         allow get: if true;
         allow list: if true;
-        allow create: if isProAdmin();
-        allow update: if isProAdmin();
-        allow delete: if isProAdmin();
+        allow create: if isAdmin();
+        allow update: if isAdmin();
+        allow delete: if isAdmin();
     }
   }
 }
+
+    

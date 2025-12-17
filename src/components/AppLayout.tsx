@@ -19,7 +19,6 @@ import {
   Settings,
   Package,
   RefreshCw,
-  Crown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -45,7 +44,7 @@ import type { AppSettings } from '@/lib/data';
 import { MaintenancePage } from '@/components/MaintenancePage';
 
 type AppUser = {
-  role?: 'user' | 'localAdmin' | 'proAdmin';
+  role?: 'user' | 'admin';
 }
 
 const allNavItems = [
@@ -55,13 +54,12 @@ const allNavItems = [
   { href: '/wallet', label: 'Wallet', icon: Wallet, roles: ['user'] },
   { href: '/my-bank', label: 'History', icon: Banknote, roles: ['user'] },
   { href: '/invite', label: 'Invite', icon: Users, roles: ['user'] },
-  // Admin items (Pro and Local)
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, roles: ['proAdmin', 'localAdmin'] },
-  { href: '/admin/deposits', label: 'Deposit Requests', icon: ArrowDownToDot, roles: ['proAdmin', 'localAdmin'] },
-  { href: '/admin/withdrawals', label: 'Withdrawal Requests', icon: ArrowUpFromDot, roles: ['proAdmin', 'localAdmin'] },
-  // Pro Admin only
-  { href: '/admin/investments', label: 'Investments', icon: Package, roles: ['proAdmin'] },
-  { href: '/admin/settings', label: 'Settings', icon: Settings, roles: ['proAdmin'] },
+  // Admin items
+  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
+  { href: '/admin/deposits', label: 'Deposit Requests', icon: ArrowDownToDot, roles: ['admin'] },
+  { href: '/admin/withdrawals', label: 'Withdrawal Requests', icon: ArrowUpFromDot, roles: ['admin'] },
+  { href: '/admin/investments', label: 'Investments', icon: Package, roles: ['admin'] },
+  { href: '/admin/settings', label: 'Settings', icon: Settings, roles: ['admin'] },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -85,7 +83,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   const userRole = useMemo(() => userData?.role ?? 'user', [userData]);
-  const isAdmin = userRole === 'proAdmin' || userRole === 'localAdmin';
+  const isAdmin = userRole === 'admin';
 
   // Redirect logic
   useEffect(() => {
@@ -124,7 +122,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         className="flex items-center gap-2 text-lg font-semibold"
         onClick={() => setSheetOpen(false)}
       >
-        {isAdmin ? <Crown className="h-6 w-6 text-amber-500" /> : <Landmark className="h-6 w-6 text-primary" />}
+        {isAdmin ? <Shield className="h-6 w-6 text-primary" /> : <Landmark className="h-6 w-6 text-primary" />}
         <span className="font-headline">InvestPro {isAdmin && 'Admin'}</span>
       </Link>
       {navItems.map((item) => (
@@ -151,8 +149,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // Show maintenance page if enabled, but not for Pro Admins
-  if (appSettings?.maintenanceMode && userRole !== 'proAdmin') {
+  // Show maintenance page if enabled, but not for Admins
+  if (appSettings?.maintenanceMode && userRole !== 'admin') {
     return <MaintenancePage message={appSettings.maintenanceMessage} />
   }
 
@@ -247,3 +245,5 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
+    

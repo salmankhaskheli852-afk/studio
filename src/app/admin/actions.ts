@@ -7,7 +7,7 @@ import { initFirebaseAdmin } from '@/firebase/server-init';
 // Initialize Firebase Admin SDK
 initFirebaseAdmin();
 
-export async function setUserRole(uid: string, role: 'user' | 'localAdmin' | 'proAdmin'): Promise<{ success: boolean, message: string }> {
+export async function setUserRole(uid: string, role: 'user' | 'admin'): Promise<{ success: boolean, message: string }> {
     try {
         // Set custom claims on the user
         await getAuth().setCustomUserClaims(uid, { role });
@@ -74,3 +74,5 @@ export async function deleteUser(uid: string): Promise<{ success: boolean, messa
         return { success: false, message: error.message || 'Failed to delete user.' };
     }
 }
+
+    
