@@ -62,6 +62,8 @@ const allNavItems = [
   { href: '/admin/withdrawals', label: 'Withdrawal Requests', icon: ArrowUpFromDot, roles: ['admin'] },
   { href: '/admin/investments', label: 'Investments', icon: Package, roles: ['admin'] },
   { href: '/admin/settings', label: 'Settings', icon: Settings, roles: ['admin'] },
+   // Common items
+  { href: '/customer-service', label: 'Customer Service', icon: LifeBuoy, roles: ['user', 'admin'], isExternal: true },
 ];
 
 const ADMIN_EMAIL = "salmankhaskheli885@gmail.com";
@@ -118,13 +120,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     window.location.reload();
   };
 
-  const navItems = useMemo(() => {
-    return allNavItems.filter(item => item.roles.includes(userRole));
-  }, [userRole]);
-
   const whatsappLink = appSettings?.customerCareWhatsapp 
     ? `https://wa.me/${appSettings.customerCareWhatsapp.replace(/[^0-9]/g, '')}` 
     : null;
+
+  const navItems = useMemo(() => {
+    return allNavItems.filter(item => {
+        if (item.href === '/customer-service') {
+            return !!whatsappLink;
+        }
+        return item.roles.includes(userRole);
+    });
+  }, [userRole, whatsappLink]);
+
 
   const NavContent = () => (
     <nav className="flex flex-col gap-4">
@@ -136,34 +144,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {isAdmin ? <Shield className="h-6 w-6 text-primary" /> : <Landmark className="h-6 w-6 text-primary" />}
         <span className="font-headline">InvestPro {isAdmin && 'Admin'}</span>
       </Link>
-      {navItems.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          onClick={() => setSheetOpen(false)}
-          className={cn(
-            'flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary',
-            pathname === item.href
-              ? 'bg-primary/10 text-primary'
-              : 'text-muted-foreground'
-          )}
-        >
-          <item.icon className="h-4 w-4" />
-          {item.label}
-        </Link>
-      ))}
-      {whatsappLink && (
-        <a
-          href={whatsappLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => setSheetOpen(false)}
-          className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-        >
-          <LifeBuoy className="h-4 w-4" />
-          Customer Service
-        </a>
-      )}
+      {navItems.map((item) => {
+          const href = item.href === '/customer-service' ? whatsappLink ?? '#' : item.href;
+          const target = item.isExternal ? '_blank' : undefined;
+          const rel = item.isExternal ? 'noopener noreferrer' : undefined;
+
+          return (
+            <Link
+              key={item.label}
+              href={href}
+              target={target}
+              rel={rel}
+              onClick={() => setSheetOpen(false)}
+              className={cn(
+                'flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary',
+                pathname === item.href && !item.isExternal
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground'
+              )}
+            >
+              <item.icon className="h-4 w-4" />
+              {item.label}
+            </Link>
+          );
+      })}
     </nav>
   );
   
