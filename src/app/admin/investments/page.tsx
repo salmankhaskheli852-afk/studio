@@ -166,8 +166,8 @@ export default function InvestmentsPage() {
                             <CardTitle>Investment Categories</CardTitle>
                             <CardDescription>Group your investment plans.</CardDescription>
                         </div>
-                        <Dialog open={isCategoryDialogOpen} onOpenChange={closeCategoryDialog}>
-                            <DialogTrigger asChild><Button onClick={() => setCategoryDialogOpen(true)}>Add Category</Button></DialogTrigger>
+                        <Dialog open={isCategoryDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) closeCategoryDialog(); else setCategoryDialogOpen(true); }}>
+                            <DialogTrigger asChild><Button>Add Category</Button></DialogTrigger>
                             <DialogContent>
                                 <DialogHeader>
                                     <DialogTitle>{editingCategory ? "Edit" : "Add"} Category</DialogTitle>
@@ -226,8 +226,8 @@ export default function InvestmentsPage() {
                             <CardTitle>Investment Plans</CardTitle>
                             <CardDescription>All available investment plans.</CardDescription>
                         </div>
-                        <Dialog open={isPlanDialogOpen} onOpenChange={closePlanDialog}>
-                            <DialogTrigger asChild><Button disabled={!categories || categories.length === 0} onClick={() => setPlanDialogOpen(true)}>Add Plan</Button></DialogTrigger>
+                        <Dialog open={isPlanDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) closePlanDialog(); else setPlanDialogOpen(true); }}>
+                            <DialogTrigger asChild><Button disabled={!categories || categories.length === 0}>Add Plan</Button></DialogTrigger>
                              <DialogContent className="sm:max-w-lg">
                                 <DialogHeader>
                                     <DialogTitle>{editingPlan ? "Edit" : "Add"} Plan</DialogTitle>
