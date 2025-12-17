@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useUser, useCollection, useMemoFirebase } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
 import { collection, query, getDocs, collectionGroup } from "firebase/firestore";
-import { MoreHorizontal, ShieldCheck, Search, Ban } from "lucide-react";
+import { MoreHorizontal, ShieldCheck, Search, Ban, UserCheck, UserX, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,6 +16,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
@@ -31,13 +35,13 @@ import {
 import type { Transaction } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { AdminStats } from '@/components/AdminStats';
-import { blockUser, deleteUser } from './actions';
+import { blockUser, deleteUser, setUserRole } from './actions';
 
 type AppUser = {
   id: string;
   displayName: string;
   email: string;
-  isAdmin?: boolean;
+  role?: 'user' | 'localAdmin' | 'proAdmin';
   photoURL?: string;
   referralCode?: string;
   investments?: any[];
@@ -121,15 +125,19 @@ export function AdminClient() {
   }, [allTransactionsQuery]);
 
 
-  const handleAction = async (action: 'block' | 'unblock' | 'delete', targetUser: AppUser) => {
+  const handleAction = async (action: 'block' | 'unblock' | 'delete' | 'setRole', targetUser: AppUser, role?: AppUser['role']) => {
     setIsActionLoading(targetUser.id);
     try {
         let result;
         if (action === 'delete') {
             result = await deleteUser(targetUser.id);
-        } else {
+        } else if (action === 'block' || action === 'unblock') {
             const shouldBlock = action === 'block';
             result = await blockUser(targetUser.id, shouldBlock);
+        } else if (action === 'setRole' && role) {
+            result = await setUserRole(targetUser.id, role);
+        } else {
+            throw new Error("Invalid action.");
         }
 
         if (result.success) {
@@ -152,6 +160,17 @@ export function AdminClient() {
         setIsActionLoading(null);
     }
   }
+
+  const getRoleBadge = (role?: AppUser['role']) => {
+    switch (role) {
+      case 'proAdmin':
+        return <span className="flex items-center gap-2 text-amber-600 font-semibold"><Crown className="h-4 w-4"/> Pro Admin</span>;
+      case 'localAdmin':
+        return <span className="flex items-center gap-2 text-primary font-semibold"><ShieldCheck className="h-4 w-4"/> Local Admin</span>;
+      default:
+        return "User";
+    }
+  };
 
 
   if (isAdminLoading || areUsersLoading) {
@@ -217,12 +236,12 @@ export function AdminClient() {
                     {u.disabled ? <span className="flex items-center gap-2 text-destructive font-semibold"><Ban className="h-4 w-4"/> Blocked</span> : <span className="text-emerald-600">Active</span>}
                   </TableCell>
                    <TableCell>
-                    {u.isAdmin ? <span className="flex items-center gap-2 text-primary font-semibold"><ShieldCheck className="h-4 w-4"/> Admin</span> : "User"}
+                     {getRoleBadge(u.role)}
                   </TableCell>
                   <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" disabled={isActionLoading === u.id}>
+                          <Button variant="ghost" size="icon" disabled={isActionLoading === u.id || u.email === adminUser?.email}>
                             {isActionLoading === u.id ? <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-primary"></div> : <MoreHorizontal className="h-4 w-4" />}
                           </Button>
                         </DropdownMenuTrigger>
@@ -230,9 +249,29 @@ export function AdminClient() {
                             <DropdownMenuItem asChild>
                                <Link href={`/admin/users/${u.id}`}>View Details</Link>
                             </DropdownMenuItem>
-                           <DropdownMenuItem disabled>
-                                {u.isAdmin ? "Remove Admin" : "Make Admin"}
-                            </DropdownMenuItem>
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                    <UserCheck className="mr-2 h-4 w-4" />
+                                    <span>Set Role</span>
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuPortal>
+                                <DropdownMenuSubContent>
+                                    <DropdownMenuItem onClick={() => handleAction('setRole', u, 'proAdmin')}>
+                                        <Crown className="mr-2 h-4 w-4" />
+                                        <span>Pro Admin</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleAction('setRole', u, 'localAdmin')}>
+                                        <ShieldCheck className="mr-2 h-4 w-4" />
+                                        <span>Local Admin</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => handleAction('setRole', u, 'user')}>
+                                        <UserX className="mr-2 h-4 w-4" />
+                                        <span>Remove Admin (Set to User)</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuSubContent>
+                                </DropdownMenuPortal>
+                            </DropdownMenuSub>
                            <DropdownMenuSeparator />
                            <DropdownMenuItem onClick={() => handleAction(u.disabled ? 'unblock' : 'block', u)}>
                                 {u.disabled ? "Unblock User" : "Block User"}

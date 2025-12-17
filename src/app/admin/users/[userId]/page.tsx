@@ -10,13 +10,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import type { Transaction } from '@/lib/data';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Crown } from 'lucide-react';
 
 type AppUser = {
   id: string;
   displayName: string;
   email: string;
-  isAdmin?: boolean;
+  role?: 'user' | 'localAdmin' | 'proAdmin';
   photoURL?: string;
   referralCode?: string;
   investments?: any[];
@@ -24,6 +24,16 @@ type AppUser = {
 
 type Wallet = {
     balance: number;
+}
+
+const RoleIcon = ({ role }: { role?: AppUser['role'] }) => {
+    if (role === 'proAdmin') {
+        return <Crown className="h-6 w-6 text-amber-500" />;
+    }
+    if (role === 'localAdmin') {
+        return <ShieldCheck className="h-6 w-6 text-primary" />;
+    }
+    return null;
 }
 
 export default function UserDetailsPage() {
@@ -102,7 +112,7 @@ export default function UserDetailsPage() {
                     <div>
                         <CardTitle className="text-2xl flex items-center gap-2">
                             {userData.displayName}
-                            {userData.isAdmin && <ShieldCheck className="h-6 w-6 text-primary" />}
+                            <RoleIcon role={userData.role} />
                         </CardTitle>
                         <CardDescription>{userData.email}</CardDescription>
                          <p className="text-sm text-muted-foreground font-mono pt-1">ID: {userData.id}</p>

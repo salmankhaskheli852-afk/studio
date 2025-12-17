@@ -57,9 +57,10 @@
             }
           }
         },
-        "isAdmin": {
-          "type": "boolean",
-          "description": "Flag to indicate if the user has admin privileges."
+        "role": {
+          "type": "string",
+          "description": "The role of the user, which determines their access level.",
+          "enum": ["user", "localAdmin", "proAdmin"]
         },
         "disabled": {
           "type": "boolean",
@@ -69,7 +70,8 @@
       "required": [
         "id",
         "googleId",
-        "referralCode"
+        "referralCode",
+        "role"
       ]
     },
     "Wallet": {
@@ -293,8 +295,9 @@
       "google.com"
     ],
     "customClaims": {
-      "isAdmin": {
-        "type": "boolean"
+      "role": {
+        "type": "string",
+        "enum": ["user", "localAdmin", "proAdmin"]
       }
     }
   },

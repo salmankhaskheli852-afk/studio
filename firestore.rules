@@ -3,9 +3,9 @@
  * Data Structure: All user data is nested under /users/{userId}, including their profile, wallet, and transactions. This path-based nesting is the primary security mechanism. Public data, such as /investment_plans and /admin_wallet_details, exists at the root level.
  * Key Security Decisions:
  *   - Users are strictly isolated and cannot read or write any data outside their own /users/{userId} document tree.
- *   - Admins (identified by a specific email address) can read all user data and manage transactions.
+ *   - Admins (identified by custom claims `role`) can read user data and manage transactions based on their level.
  *   - Listing users from the root /users collection is restricted to admins only for security and privacy.
- *   - Collections like `investment_plans` and `admin_wallet_details` are publicly readable to allow the client app to function, but all write operations are disabled pending the implementation of a proper admin role system.
+ *   - Collections like `investment_plans` and `admin_wallet_details` are publicly readable to allow the client app to function, but all write operations are restricted to Pro Admins.
  * Denormalization for Authorization: The rules rely on the path structure `/users/{userId}/...` for authorization, which avoids costly `get()` calls to check ownership on nested documents like wallets or transactions. On document creation, the rules validate that internal IDs (e.g., a `userId` field) match the document's path to ensure relational integrity.
  * Structural Segregation: User-private data (`/users/{userId/...}`) is kept in a separate hierarchy from globally-public data (`/investment_plans`), which simplifies security and makes list operations safe and performant.
  */
@@ -18,45 +18,43 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Checks if the currently signed-in user's UID matches the given userId from the path.
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // IMPORTANT: Replace "salmankhaskheli885@gmail.com" with the actual admin's email address.
-    function isAdmin() {
-      return isSignedIn() && request.auth.token.email == "salmankhaskheli885@gmail.com";
+    function isProAdmin() {
+      return isSignedIn() && request.auth.token.role == "proAdmin";
+    }
+
+    function isLocalAdmin() {
+      return isSignedIn() && request.auth.token.role == "localAdmin";
     }
     
-    // For update/delete, ensures the document exists AND the user is the owner.
-    // This prevents modifying non-existent data and provides a single, robust check.
+    function isAdmin() {
+      return isProAdmin() || isLocalAdmin();
+    }
+    
     function isExistingOwner(userId) {
       return isOwner(userId) && resource != null;
     }
 
     /**
-     * @description Manages user profile documents. Users can create and manage their own profile. Admins can read all profiles.
+     * @description Manages user profile documents. Users can create and manage their own profile. Pro Admins can read/update all profiles.
      * @path /users/{userId}
-     * @allow A new user (auth.uid: 'user123') can (create) their own profile at `/users/user123`.
-     * @allow An admin can (get) any user's profile, e.g., `/users/user456`.
-     * @deny A user (auth.uid: 'user123') cannot (get) another user's profile at `/users/user456`.
-     * @principle Enforces self-management for users and read-all access for admins. User listing is restricted to admins.
+     * @principle Enforces self-management for users and full control for Pro Admins. User listing is restricted.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
+      allow get: if isOwner(userId) || isProAdmin();
+      allow list: if isProAdmin();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isOwner(userId) || isAdmin();
-      allow delete: if false;
+      allow update: if isOwner(userId) || isProAdmin();
+      allow delete: if isProAdmin();
     }
 
     /**
-     * @description Secures a user's wallet documents. A user has full control over their own wallets. Admins can read and update wallets (for transaction approvals).
+     * @description Secures a user's wallet documents. A user has full control over their own wallets. Admins can read and update wallets for transaction approvals.
      * @path /users/{userId}/wallet/{walletId}
-     * @allow The user 'user123' can (get) their own wallet document at `/users/user123/wallet/w_abc`.
-     * @allow An admin can (get) the wallet of 'user123'.
-     * @deny The user 'user456' cannot (create) a wallet for 'user123' at `/users/user123/wallet/w_xyz`.
-     * @principle Restricts access to a user's own data tree using path-based ownership, with an exception for admin reads and updates.
+     * @principle Restricts access to a user's own data tree using path-based ownership, with an exception for admin access.
      */
     match /users/{userId}/wallet/{walletId} {
       allow get: if isOwner(userId) || isAdmin();
@@ -69,10 +67,7 @@ service cloud.firestore {
     /**
      * @description Secures a user's transaction history. Admins can view this history and update status.
      * @path /users/{userId}/wallet/{walletId}/transactions/{transactionId}
-     * @allow The user 'user123' can (create) a new transaction at `/users/user123/wallet/w_abc/transactions/t_123`.
-     * @allow An admin can (list) and (update) transactions for 'user123'.
-     * @deny The user 'user456' cannot (list) transactions at `/users/user123/wallet/w_abc/transactions`.
-     * @principle Inherits ownership from the path, ensuring only the user can manage their financial records. Admins have read-only and status update access.
+     * @principle Inherits ownership from the path, ensuring only the user can manage their financial records. Admins have read and status update access.
      */
     match /users/{userId}/wallet/{walletId}/transactions/{transactionId} {
       allow get: if isOwner(userId) || isAdmin();
@@ -85,8 +80,6 @@ service cloud.firestore {
     /**
      * @description Allows admins to query across all transaction subcollections.
      * @path /users/{userId}/wallet/{walletId}/transactions/{transactionId}
-     * @allow An admin can perform a `collectionGroup` query on `transactions`.
-     * @deny A non-admin user cannot perform this query.
      * @principle Enables admins to fetch all pending requests efficiently.
      */
      match /{path=**}/transactions/{transactionId} {
@@ -97,59 +90,53 @@ service cloud.firestore {
     /**
      * @description Manages investment plan categories.
      * @path /investment_categories/{categoryId}
-     * @principle Public Read with Admin-Only Writes.
+     * @principle Public Read with Pro Admin-Only Writes.
      */
     match /investment_categories/{categoryId} {
         allow get: if true;
         allow list: if true;
-        allow create: if isAdmin();
-        allow update: if isAdmin();
-        allow delete: if isAdmin();
+        allow create: if isProAdmin();
+        allow update: if isProAdmin();
+        allow delete: if isProAdmin();
     }
 
     /**
      * @description Manages investment plans, which are public to all users for reading.
      * @path /investment_plans/{investmentPlanId}
-     * @allow Any user, even unauthenticated, can (list) or (get) all investment plans.
-     * @deny Any authenticated user without admin rights cannot (create) a new investment plan.
-     * @principle Public Read with Admin-Only Writes. As no admin role is defined, writes are disabled for maximum security.
+     * @principle Public Read with Pro Admin-Only Writes.
      */
     match /investment_plans/{investmentPlanId} {
       allow get: if true;
       allow list: if true;
-      allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow create: if isProAdmin();
+      allow update: if isProAdmin();
+      allow delete: if isProAdmin();
     }
 
     /**
      * @description Manages admin wallet details for user deposits. This data is public for viewing.
      * @path /admin_wallet_details/{adminWalletDetailId}
-     * @allow Any user can (get) the admin's wallet details to make a deposit.
-     * @deny An authenticated user cannot (update) the admin's account number.
-     * @principle Public Read with Admin-Only Writes. Secures critical financial information from modification by unauthorized users.
+     * @principle Public Read with Pro Admin-Only Writes.
      */
     match /admin_wallet_details/{adminWalletDetailId} {
       allow get: if true;
       allow list: if true;
-      allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow create: if isProAdmin();
+      allow update: if isProAdmin();
+      allow delete: if isProAdmin();
     }
 
     /**
      * @description Manages global application settings like transaction limits.
      * @path /app_settings/{settingsId}
-     * @allow All users can read the settings.
-     * @deny Only admins can write to the settings.
-     * @principle Public read for client-side rules, admin-only write for configuration.
+     * @principle Public read for client-side rules, Pro Admin-only write for configuration.
      */
     match /app_settings/{settingsId} {
         allow get: if true;
         allow list: if true;
-        allow create: if isAdmin();
-        allow update: if isAdmin();
-        allow delete: if isAdmin();
+        allow create: if isProAdmin();
+        allow update: if isProAdmin();
+        allow delete: if isProAdmin();
     }
   }
 }

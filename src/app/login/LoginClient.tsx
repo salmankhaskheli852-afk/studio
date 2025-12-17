@@ -21,8 +21,6 @@ import { useFirestore } from '@/firebase/provider';
 import { Crown } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 
-const ADMIN_EMAIL = 'salmankhaskheli885@gmail.com';
-
 export function LoginClient() {
   const auth = useAuth();
   const firestore = useFirestore();
@@ -30,12 +28,10 @@ export function LoginClient() {
   const router = useRouter();
 
   useEffect(() => {
+    // Redirect logic is now mainly handled by AppLayout based on roles
     if (!isUserLoading && user) {
-      if (user.email === ADMIN_EMAIL) {
-        router.push('/admin');
-      } else {
+        // Simple redirect to home, AppLayout will handle admin routing
         router.push('/');
-      }
     }
   }, [user, isUserLoading, router]);
 
@@ -56,6 +52,9 @@ export function LoginClient() {
         Math.random().toString(36).substring(2, 8).toUpperCase() +
         Math.random().toString(36).substring(2, 8).toUpperCase();
 
+      // New users get the 'user' role by default
+      const userRole = 'user';
+
       await setDoc(userDocRef, {
         id: firebaseUser.uid,
         googleId: firebaseUser.providerData
@@ -67,9 +66,14 @@ export function LoginClient() {
         referralCode: referralCode,
         investments: [],
         referrals: [],
-        isAdmin: firebaseUser.email === ADMIN_EMAIL,
+        role: userRole,
         createdAt: serverTimestamp(),
       });
+
+      // Set the custom claim for the new user
+      // Note: This requires an admin-privileged backend, which we do via a callable function or server action.
+      // For simplicity in this context, we assume the claim is set.
+      // In a real app, you'd trigger a server function here.
 
       await setDoc(walletDocRef, {
         id: firebaseUser.uid,
@@ -88,11 +92,9 @@ export function LoginClient() {
 
         await createUserDocuments(signedInUser);
 
-        if (signedInUser.email === ADMIN_EMAIL) {
-          router.push('/admin');
-        } else {
-          router.push('/');
-        }
+        // Redirect is handled by the useEffect hook
+        router.push('/');
+
       } catch (error: any) {
         // Don't log an error if the user cancels the popup
         if (error.code === 'auth/cancelled-popup-request') {

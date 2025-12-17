@@ -19,6 +19,7 @@ import {
   Settings,
   Package,
   RefreshCw,
+  Crown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -43,23 +44,25 @@ import { cn } from '@/lib/utils';
 import type { AppSettings } from '@/lib/data';
 import { MaintenancePage } from '@/components/MaintenancePage';
 
+type AppUser = {
+  role?: 'user' | 'localAdmin' | 'proAdmin';
+}
 
 const allNavItems = [
   // User items
-  { href: '/', label: 'Home', icon: Home, adminOnly: false },
-  { href: '/invest', label: 'Invest', icon: TrendingUp, adminOnly: false },
-  { href: '/wallet', label: 'Wallet', icon: Wallet, adminOnly: false },
-  { href: '/my-bank', label: 'History', icon: Banknote, adminOnly: false },
-  { href: '/invite', label: 'Invite', icon: Users, adminOnly: false },
-  // Admin items
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, adminOnly: true },
-  { href: '/admin/deposits', label: 'Deposit Requests', icon: ArrowDownToDot, adminOnly: true },
-  { href: '/admin/withdrawals', label: 'Withdrawal Requests', icon: ArrowUpFromDot, adminOnly: true },
-  { href: '/admin/investments', label: 'Investments', icon: Package, adminOnly: true },
-  { href: '/admin/settings', label: 'Settings', icon: Settings, adminOnly: true },
+  { href: '/', label: 'Home', icon: Home, roles: ['user'] },
+  { href: '/invest', label: 'Invest', icon: TrendingUp, roles: ['user'] },
+  { href: '/wallet', label: 'Wallet', icon: Wallet, roles: ['user'] },
+  { href: '/my-bank', label: 'History', icon: Banknote, roles: ['user'] },
+  { href: '/invite', label: 'Invite', icon: Users, roles: ['user'] },
+  // Admin items (Pro and Local)
+  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, roles: ['proAdmin', 'localAdmin'] },
+  { href: '/admin/deposits', label: 'Deposit Requests', icon: ArrowDownToDot, roles: ['proAdmin', 'localAdmin'] },
+  { href: '/admin/withdrawals', label: 'Withdrawal Requests', icon: ArrowUpFromDot, roles: ['proAdmin', 'localAdmin'] },
+  // Pro Admin only
+  { href: '/admin/investments', label: 'Investments', icon: Package, roles: ['proAdmin'] },
+  { href: '/admin/settings', label: 'Settings', icon: Settings, roles: ['proAdmin'] },
 ];
-
-const ADMIN_EMAIL = "salmankhaskheli885@gmail.com";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -71,6 +74,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   
   const [isClient, setIsClient] = useState(false);
 
+  const userDocRef = useMemoFirebase(() => (user ? doc(firestore, "users", user.uid) : null), [firestore, user]);
+  const { data: userData, isLoading: isUserDocLoading } = useDoc<AppUser>(userDocRef);
+
   const appSettingsDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'app_settings', 'global') : null, [firestore]);
   const { data: appSettings, isLoading: areSettingsLoading } = useDoc<AppSettings>(appSettingsDocRef);
 
@@ -78,20 +84,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setIsClient(true);
   }, []);
 
-  const isAdmin = useMemo(() => user?.email === ADMIN_EMAIL, [user]);
+  const userRole = useMemo(() => userData?.role ?? 'user', [userData]);
+  const isAdmin = userRole === 'proAdmin' || userRole === 'localAdmin';
 
   // Redirect logic
   useEffect(() => {
-    if (!isUserLoading && user) {
-      if (isAdmin && !pathname.startsWith('/admin')) {
-        router.replace('/admin');
-      } else if (!isAdmin && pathname.startsWith('/admin')) {
-        router.replace('/');
-      }
-    } else if (!isUserLoading && !user && pathname.startsWith('/admin')) {
+    if (!isUserLoading && !isUserDocLoading) {
+      if (user) { // User is logged in
+        if (isAdmin && !pathname.startsWith('/admin')) {
+          router.replace('/admin');
+        } else if (!isAdmin && pathname.startsWith('/admin')) {
+          router.replace('/');
+        }
+      } else if (pathname !== '/login') { // User not logged in and not on login page
         router.replace('/login');
+      }
     }
-  }, [user, isUserLoading, isAdmin, pathname, router]);
+  }, [user, isUserLoading, isUserDocLoading, isAdmin, pathname, router]);
 
   const handleLogout = () => {
     if (auth) {
@@ -105,18 +114,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   const navItems = useMemo(() => {
-    return allNavItems.filter(item => item.adminOnly === isAdmin);
-  }, [isAdmin]);
+    return allNavItems.filter(item => item.roles.includes(userRole));
+  }, [userRole]);
 
   const NavContent = () => (
     <nav className="flex flex-col gap-4">
       <Link
-        href="/"
+        href={isAdmin ? "/admin" : "/"}
         className="flex items-center gap-2 text-lg font-semibold"
         onClick={() => setSheetOpen(false)}
       >
-        <Landmark className="h-6 w-6 text-primary" />
-        <span className="font-headline">InvestPro</span>
+        {isAdmin ? <Crown className="h-6 w-6 text-amber-500" /> : <Landmark className="h-6 w-6 text-primary" />}
+        <span className="font-headline">InvestPro {isAdmin && 'Admin'}</span>
       </Link>
       {navItems.map((item) => (
         <Link
@@ -142,8 +151,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // Show maintenance page if enabled, but not for admins
-  if (appSettings?.maintenanceMode && !isAdmin) {
+  // Show maintenance page if enabled, but not for Pro Admins
+  if (appSettings?.maintenanceMode && userRole !== 'proAdmin') {
     return <MaintenancePage message={appSettings.maintenanceMessage} />
   }
 
@@ -185,7 +194,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             >
               <RefreshCw className="h-5 w-5 text-muted-foreground" />
             </Button>
-            {isUserLoading ? (
+            {isUserLoading || isUserDocLoading ? (
               <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
             ) : user ? (
               <DropdownMenu>
