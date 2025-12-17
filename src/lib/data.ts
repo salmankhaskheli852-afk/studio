@@ -5,6 +5,7 @@ export type InvestmentPlan = {
   dailyReturn: number;
   period: number;
   minInvest: number;
+  imageUrl?: string;
 };
 
 export type InvestmentCategory = {

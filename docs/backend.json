@@ -171,6 +171,11 @@
         },
         "minInvest": {
           "type": "number"
+        },
+        "imageUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of an image for the investment plan."
         }
       },
       "required": [

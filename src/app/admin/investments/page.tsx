@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,17 +10,14 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useFirestore } from "@/firebase/provider";
 import { useCollection, useMemoFirebase } from '@/firebase';
-import { collection, writeBatch, doc, addDoc, deleteDoc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, deleteDoc, updateDoc, doc } from "firebase/firestore";
 import { useToast } from '@/hooks/use-toast';
 import { Trash2, Edit } from 'lucide-react';
-
-// Data types
-type InvestmentCategory = { id: string; name: string; description: string; };
-type InvestmentPlan = { id: string; name: string; categoryId: string; dailyReturn: number; period: number; minInvest: number; };
+import type { InvestmentCategory, InvestmentPlan } from '@/lib/data';
 
 // Schemas
 const categorySchema = z.object({
@@ -34,6 +31,7 @@ const planSchema = z.object({
     dailyReturn: z.coerce.number().positive("Must be positive."),
     period: z.coerce.number().int().positive("Must be a positive number of days."),
     minInvest: z.coerce.number().min(0, "Cannot be negative."),
+    imageUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
 });
 
 export default function InvestmentsPage() {
@@ -45,7 +43,6 @@ export default function InvestmentsPage() {
     const [isPlanDialogOpen, setPlanDialogOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<InvestmentCategory | null>(null);
     const [editingPlan, setEditingPlan] = useState<InvestmentPlan | null>(null);
-    const [itemToDelete, setItemToDelete] = useState<{ id: string, type: 'category' | 'plan' } | null>(null);
 
     // Data fetching
     const categoriesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'investment_categories') : null, [firestore]);
@@ -67,6 +64,7 @@ export default function InvestmentsPage() {
             dailyReturn: 0,
             period: 0,
             minInvest: 0,
+            imageUrl: '',
         }
     });
 
@@ -108,7 +106,6 @@ export default function InvestmentsPage() {
             console.error(e);
             toast({ variant: 'destructive', title: "Error", description: "Failed to delete category." });
         }
-        setItemToDelete(null);
     };
 
     // Handlers for Plan
@@ -147,7 +144,6 @@ export default function InvestmentsPage() {
             console.error(e);
             toast({ variant: 'destructive', title: "Error", description: "Failed to delete plan." });
         }
-         setItemToDelete(null);
     };
     
     const closeCategoryDialog = () => {
@@ -165,18 +161,9 @@ export default function InvestmentsPage() {
             dailyReturn: 0,
             period: 0,
             minInvest: 0,
+            imageUrl: '',
         });
     }
-
-    const performDelete = () => {
-        if (!itemToDelete) return;
-        if (itemToDelete.type === 'category') {
-            handleDeleteCategory(itemToDelete.id);
-        } else {
-            handleDeletePlan(itemToDelete.id);
-        }
-    };
-
 
     return (
         <div className="space-y-8">
@@ -294,6 +281,9 @@ export default function InvestmentsPage() {
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
+                                        <FormField control={planForm.control} name="imageUrl" render={({ field }) => (
+                                            <FormItem><FormLabel>Image URL (Optional)</FormLabel><FormControl><Input placeholder="https://example.com/image.png" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
                                         <div className="grid grid-cols-2 gap-4">
                                             <FormField control={planForm.control} name="dailyReturn" render={({ field }) => (
                                                 <FormItem><FormLabel>Daily Return (%)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
@@ -355,24 +345,6 @@ export default function InvestmentsPage() {
                     </Table>
                 </CardContent>
             </Card>
-
-            {/* This AlertDialog is no longer needed here, but keeping the logic in case we want a single dialog for all deletions later. For now, it's better to have one per row. */}
-            {/* 
-            <AlertDialog open={!!itemToDelete} onOpenChange={(isOpen) => !isOpen && setItemToDelete(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the {itemToDelete?.type} and it cannot be recovered.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={performDelete}>Delete</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-            */}
         </div>
     );
 }

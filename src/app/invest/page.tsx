@@ -1,18 +1,17 @@
 'use client';
 
 import { useState } from "react";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PiggyBank, Zap, BarChart3, TrendingUp } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useUser, useDoc, useMemoFirebase, useCollection } from "@/firebase";
 import { collection, doc, updateDoc, arrayUnion, increment, addDoc, serverTimestamp } from "firebase/firestore";
 import { useFirestore } from "@/firebase/provider";
 import { useToast } from "@/hooks/use-toast";
-
-type InvestmentCategory = { id: string; name: string; };
-type InvestmentPlan = { id: string; name: string; categoryId: string; dailyReturn: number; period: number; minInvest: number; };
+import type { InvestmentCategory, InvestmentPlan } from "@/lib/data";
 
 const planIcons = {
   default: <TrendingUp className="h-8 w-8 text-primary" />,
@@ -143,7 +142,17 @@ export default function InvestPage() {
                         {plans?.filter(p => p.categoryId === category.id).map((plan) => {
                             const dailyIncome = (plan.minInvest * plan.dailyReturn) / 100;
                             return (
-                                <Card key={plan.id} className="flex flex-col">
+                                <Card key={plan.id} className="flex flex-col overflow-hidden">
+                                <div className="relative h-40 w-full">
+                                    <Image 
+                                        src={plan.imageUrl || `https://picsum.photos/seed/${plan.id}/600/400`}
+                                        alt={plan.name}
+                                        fill
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                        className="object-cover"
+                                        data-ai-hint="investment money"
+                                    />
+                                </div>
                                 <CardHeader>
                                   <div className="flex items-center gap-4">
                                     {getPlanIcon(plan.name)}
