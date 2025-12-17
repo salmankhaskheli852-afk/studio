@@ -34,7 +34,6 @@ export default function WithdrawalRequestsPage() {
         if (!firestore) return;
         setIsLoading(true);
         try {
-            // Query all transactions to avoid needing an index
             const transactionsQuery = query(collectionGroup(firestore, 'transactions'));
             const querySnapshot = await getDocs(transactionsQuery);
             const fetchedRequests: WithdrawalRequest[] = [];
@@ -42,12 +41,13 @@ export default function WithdrawalRequestsPage() {
             for (const transactionDoc of querySnapshot.docs) {
                 const data = transactionDoc.data() as any;
 
-                // Filter for pending WITHDRAWAL requests on the client
                 if (data.type !== 'Withdrawal' || data.status !== 'Pending') {
                     continue;
                 }
 
-                const userId = transactionDoc.ref.path.split('/')[1];
+                // Path: users/{userId}/wallet/{walletId}/transactions/{transactionId}
+                const pathParts = transactionDoc.ref.path.split('/');
+                const userId = pathParts[1];
 
                 const userDocRef = doc(firestore, 'users', userId);
                 const userDocSnap = await getDoc(userDocRef);
@@ -101,10 +101,8 @@ export default function WithdrawalRequestsPage() {
         const transactionDocRef = doc(firestore, request.transactionPath);
         batch.update(transactionDocRef, { status: newStatus });
 
-        // If a request is rejected, refund the user's balance
         if (newStatus === 'Failed') {
             const walletDocRef = doc(firestore, `users/${request.userId}/wallet`, request.userId);
-            // amount is negative for withdrawal, so incrementing refunds it
             batch.update(walletDocRef, { balance: increment(Math.abs(request.amount)) });
         }
 

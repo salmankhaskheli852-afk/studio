@@ -33,7 +33,6 @@ export default function DepositRequestsPage() {
         if (!firestore) return;
         setIsLoading(true);
         try {
-            // Query all transactions without filters to avoid needing an index
             const transactionsQuery = query(collectionGroup(firestore, 'transactions'));
             const querySnapshot = await getDocs(transactionsQuery);
 
@@ -42,24 +41,24 @@ export default function DepositRequestsPage() {
             for (const transactionDoc of querySnapshot.docs) {
                 const data = transactionDoc.data() as Transaction;
                 
-                // Filter for pending DEPOSIT requests on the client side
                 if (data.type !== 'Deposit' || data.status !== 'Pending') {
                     continue;
                 }
 
                 const pathParts = transactionDoc.ref.path.split('/');
+                // Path: users/{userId}/wallet/{walletId}/transactions/{transactionId}
+                // We need userId which is at index 1.
                 const userId = pathParts[1];
 
                 const userDocRef = doc(firestore, 'users', userId);
                 const userDoc = await getDoc(userDocRef);
 
-
                 let userDisplayName = 'Unknown User';
                 let userEmail = 'N/A';
                 if (userDoc.exists()) {
                     const userData = userDoc.data();
-                    userDisplayName = userData.displayName;
-                    userEmail = userData.email;
+                    userDisplayName = userData.displayName || 'Unknown User';
+                    userEmail = userData.email || 'N/A';
                 }
 
                 fetchedRequests.push({
@@ -99,6 +98,7 @@ export default function DepositRequestsPage() {
         batch.update(transactionDocRef, { status: newStatus });
 
         if (newStatus === 'Completed') {
+             // Path: users/{userId}/wallet/{walletId}
             const walletDocRef = doc(firestore, `users/${request.userId}/wallet`, request.userId);
             batch.update(walletDocRef, { balance: increment(request.amount) });
         }
