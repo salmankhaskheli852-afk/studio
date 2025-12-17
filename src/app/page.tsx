@@ -1,12 +1,10 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { DollarSign, TrendingUp, Users } from "lucide-react";
-import Link from "next/link";
-import { useUser, useDoc, useMemoFirebase } from "@/firebase";
-import { doc } from "firebase/firestore";
+import { useMemo } from 'react';
+import { useUser, useDoc, useMemoFirebase, useCollection } from "@/firebase";
+import { doc, collection, query, where, Timestamp } from "firebase/firestore";
 import { useFirestore } from "@/firebase/provider";
+import { DashboardStats } from "@/components/DashboardStats";
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
@@ -24,12 +22,46 @@ export default function Home() {
   );
   const { data: walletData, isLoading: isWalletLoading } = useDoc(walletDocRef);
 
-  const isLoading = isUserLoading || isUserDocLoading || isWalletLoading;
-  
+  const transactionsQuery = useMemoFirebase(
+    () => (user ? collection(firestore, `users/${user.uid}/wallet/${user.uid}/transactions`) : null),
+    [firestore, user]
+  );
+  const { data: transactions, isLoading: isLoadingTransactions } = useCollection(transactionsQuery);
+
+  const isLoading = isUserLoading || isUserDocLoading || isWalletLoading || isLoadingTransactions;
+
   const balance = walletData?.balance ?? 0;
-  const activeInvestmentsCount = userData?.investments?.length ?? 0;
-  const activeInvestmentsNames = userData?.investments?.map(inv => inv.name).join(', ') || 'No active plans';
-  const totalReferrals = userData?.referrals?.length ?? 0;
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayTimestamp = Timestamp.fromDate(today);
+
+  const stats = useMemo(() => {
+    let totalIncome = 0;
+    let totalWithdraw = 0;
+    let totalRecharge = 0;
+    let todaysIncome = 0;
+
+    transactions?.forEach(t => {
+      if (t.status === 'Completed') {
+        if (t.type === 'Investment') {
+          totalIncome += t.amount;
+          if ((t.timestamp as Timestamp).toDate() >= today) {
+            todaysIncome += t.amount;
+          }
+        } else if (t.type === 'Withdrawal') {
+          totalWithdraw += Math.abs(t.amount);
+        } else if (t.type === 'Deposit') {
+          totalRecharge += t.amount;
+        }
+      }
+    });
+
+    return { totalIncome, totalWithdraw, totalRecharge, todaysIncome };
+  }, [transactions, today]);
+  
+  const totalAssets = balance + (userData?.investments?.reduce((sum: number, inv: any) => sum + (inv.amount || 0), 0) ?? 0);
+  const teamIncome = userData?.referrals?.length ?? 0; // Placeholder, assuming team income is based on referral count.
 
   return (
     <div className="space-y-6">
@@ -38,64 +70,17 @@ export default function Home() {
         <p className="text-muted-foreground">Your dashboard for financial growth.</p>
       </header>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="h-8 w-3/4 animate-pulse rounded-md bg-muted" />
-            ) : (
-              <div className="text-2xl font-bold">PKR {balance.toLocaleString()}</div>
-            )}
-            <p className="text-xs text-muted-foreground">Live balance</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Investments</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="h-8 w-1/4 animate-pulse rounded-md bg-muted" />
-            ) : (
-              <div className="text-2xl font-bold">+{activeInvestmentsCount}</div>
-            )}
-            <p className="text-xs text-muted-foreground">{isLoading ? 'Loading...' : activeInvestmentsNames}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Referrals</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-                <div className="h-8 w-1/4 animate-pulse rounded-md bg-muted" />
-            ) : (
-                <div className="text-2xl font-bold">+{totalReferrals}</div>
-            )}
-            <p className="text-xs text-muted-foreground">Your network</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Get started with your next financial move.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-4">
-          <Button asChild>
-            <Link href="/my-bank">Deposit Funds</Link>
-          </Button>
-          <Button asChild variant="secondary">
-            <Link href="/invest">Explore Plans</Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <DashboardStats
+        isLoading={isLoading}
+        balanceWallet={balance}
+        rechargeWallet={stats.totalRecharge}
+        totalIncome={stats.totalIncome}
+        totalWithdraw={stats.totalWithdraw}
+        totalRecharge={stats.totalRecharge}
+        todaysIncome={stats.todaysIncome}
+        totalAssets={totalAssets}
+        teamIncome={teamIncome}
+      />
     </div>
   );
+}
