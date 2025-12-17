@@ -22,7 +22,6 @@ import { AdminStats } from '@/components/AdminStats';
 
 type AppUser = {
   id: string;
-  customId: string;
   displayName: string;
   email: string;
   isAdmin?: boolean;
@@ -58,7 +57,7 @@ export function AdminClient() {
     return users.filter(user => 
         user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.customId.toLowerCase().includes(searchTerm.toLowerCase())
+        user.id.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [users, searchTerm]);
 
@@ -183,7 +182,7 @@ export function AdminClient() {
             <TableBody>
               {filteredUsers?.map((u) => (
                 <TableRow key={u.id}>
-                  <TableCell className="font-mono">{u.customId}</TableCell>
+                  <TableCell className="font-mono">{u.id}</TableCell>
                   <TableCell className="font-medium">{u.displayName}</TableCell>
                   <TableCell>{u.email}</TableCell>
                    <TableCell>
@@ -215,5 +214,3 @@ export function AdminClient() {
     </div>
   );
 }
-
-    

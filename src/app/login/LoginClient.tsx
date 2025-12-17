@@ -16,13 +16,12 @@ import {
   signInWithPopup,
   User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp, runTransaction, DocumentReference } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { Landmark } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 
 const ADMIN_EMAIL = 'salmankhaskheli885@gmail.com';
-const STARTING_USER_ID = 100100;
 
 export function LoginClient() {
   const auth = useAuth();
@@ -40,34 +39,6 @@ export function LoginClient() {
     }
   }, [user, isUserLoading, router]);
 
-  const getNextCustomId = async () => {
-    if (!firestore) throw new Error("Firestore is not initialized.");
-    
-    // Corrected path with an even number of segments: internal (collection) / users (document)
-    const counterDocRef = doc(firestore, 'internal', 'users');
-
-    try {
-        const newId = await runTransaction(firestore, async (transaction) => {
-            const counterDoc = await transaction.get(counterDocRef);
-
-            if (!counterDoc.exists()) {
-                // If the counter document doesn't exist, initialize it.
-                transaction.set(counterDocRef, { lastId: STARTING_USER_ID });
-                return STARTING_USER_ID;
-            }
-
-            const newLastId = counterDoc.data().lastId + 1;
-            transaction.update(counterDocRef, { lastId: newLastId });
-            return newLastId;
-        });
-        return newId;
-    } catch (error) {
-        console.error("Transaction failed: ", error);
-        throw error;
-    }
-  };
-
-
   const createUserDocuments = async (firebaseUser: FirebaseUser) => {
     if (!firestore) return;
 
@@ -84,12 +55,9 @@ export function LoginClient() {
       const referralCode =
         Math.random().toString(36).substring(2, 8).toUpperCase() +
         Math.random().toString(36).substring(2, 8).toUpperCase();
-      
-      const nextId = await getNextCustomId();
 
       await setDoc(userDocRef, {
         id: firebaseUser.uid,
-        customId: nextId.toString(),
         googleId: firebaseUser.providerData
           .find((p) => p.providerId === 'google.com')
           ?.uid.toString(),

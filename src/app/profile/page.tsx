@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label';
 
 type AppUser = {
   id: string;
-  customId: string;
   displayName: string;
   email: string;
 };
@@ -72,7 +71,7 @@ export default function ProfilePage() {
             </div>
              <div className="space-y-2">
                 <Label htmlFor="uid">User ID</Label>
-                <Input id="uid" defaultValue={userData.customId} readOnly />
+                <Input id="uid" defaultValue={userData.id} readOnly />
             </div>
             <Button className="w-full">Update Profile</Button>
         </CardContent>
@@ -80,5 +79,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    
