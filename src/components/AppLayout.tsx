@@ -22,7 +22,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { useState, useMemo, useEffect } from 'react';
-import { useUser, useAuth } from '@/firebase';
+import { useUser, useAuth, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore } from '@/firebase/provider';
+import { doc } from 'firebase/firestore';
 import {
   Avatar,
   AvatarFallback,
@@ -37,6 +39,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import type { AppSettings } from '@/lib/data';
+import { MaintenancePage } from '@/components/MaintenancePage';
+
 
 const allNavItems = [
   // User items
@@ -61,8 +66,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isSheetOpen, setSheetOpen] = useState(false);
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
+  const firestore = useFirestore();
   
   const [isClient, setIsClient] = useState(false);
+
+  const appSettingsDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'app_settings', 'global') : null, [firestore]);
+  const { data: appSettings, isLoading: areSettingsLoading } = useDoc<AppSettings>(appSettingsDocRef);
 
   useEffect(() => {
     setIsClient(true);
@@ -109,11 +118,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           key={item.href}
           href={item.href}
           onClick={() => setSheetOpen(false)}
-          className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary ${
+          className={cn(
+            'flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary',
             pathname === item.href
               ? 'bg-primary/10 text-primary'
               : 'text-muted-foreground'
-          }`}
+          )}
         >
           <item.icon className="h-4 w-4" />
           {item.label}
@@ -127,6 +137,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
+  // Show maintenance page if enabled, but not for admins
+  if (appSettings?.maintenanceMode && !isAdmin) {
+    return <MaintenancePage message={appSettings.maintenanceMessage} />
+  }
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">

@@ -6,11 +6,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { useFirestore } from "@/firebase/provider";
-import { useCollection, useDoc, useMemoFirebase } from '@/firebase';
-import { collection, doc, writeBatch } from "firebase/firestore";
+import { useDoc, useMemoFirebase, useCollection } from '@/firebase';
+import { doc, writeBatch } from "firebase/firestore";
 import type { AdminWallet, AppSettings } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 
@@ -25,6 +27,8 @@ const settingsSchema = z.object({
     maxDeposit: z.coerce.number().positive(),
     minWithdrawal: z.coerce.number().positive(),
     maxWithdrawal: z.coerce.number().positive(),
+    maintenanceMode: z.boolean().default(false),
+    maintenanceMessage: z.string().optional(),
 });
 
 type WalletFormData = z.infer<typeof walletSchema>;
@@ -38,7 +42,7 @@ export default function SettingsPage() {
     const adminWalletsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'admin_wallet_details') : null, [firestore]);
     const { data: adminWallets, isLoading: areWalletsLoading } = useCollection<AdminWallet>(adminWalletsQuery);
 
-    const appSettingsDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'app_settings', 'transaction_limits') : null, [firestore]);
+    const appSettingsDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'app_settings', 'global') : null, [firestore]);
     const { data: appSettings, isLoading: areSettingsLoading } = useDoc<AppSettings>(appSettingsDocRef);
     
     // Forms
@@ -52,7 +56,14 @@ export default function SettingsPage() {
     });
     const settingsForm = useForm<SettingsFormData>({ 
         resolver: zodResolver(settingsSchema),
-        defaultValues: { minDeposit: 0, maxDeposit: 0, minWithdrawal: 0, maxWithdrawal: 0 }
+        defaultValues: { 
+            minDeposit: 0, 
+            maxDeposit: 0, 
+            minWithdrawal: 0, 
+            maxWithdrawal: 0,
+            maintenanceMode: false,
+            maintenanceMessage: "The application is currently under maintenance. We are working to improve your experience. Your funds are safe. Please check back later."
+        }
     });
 
     useEffect(() => {
@@ -104,7 +115,7 @@ export default function SettingsPage() {
             const batch = writeBatch(firestore);
             batch.set(appSettingsDocRef, data, { merge: true });
             await batch.commit();
-            toast({ title: "Success", description: "Transaction limits updated successfully." });
+            toast({ title: "Success", description: "Settings updated successfully." });
         } catch (e) {
             console.error(e);
             toast({ variant: 'destructive', title: "Error", description: "Failed to update settings." });
@@ -123,8 +134,65 @@ export default function SettingsPage() {
         <div className="space-y-8">
             <header>
                 <h1 className="text-3xl font-bold tracking-tight font-headline">Application Settings</h1>
-                <p className="text-muted-foreground">Manage admin wallets and transaction limits.</p>
+                <p className="text-muted-foreground">Manage admin wallets, transaction limits, and maintenance mode.</p>
             </header>
+
+            {/* Maintenance Mode */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Maintenance Mode</CardTitle>
+                    <CardDescription>
+                        Enable maintenance mode to show a temporary page to users.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Form {...settingsForm}>
+                        <form onSubmit={settingsForm.handleSubmit(handleSettingsSubmit)} className="space-y-6">
+                            <FormField
+                                control={settingsForm.control}
+                                name="maintenanceMode"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                        <div className="space-y-0.5">
+                                            <FormLabel className="text-base">Enable Maintenance Mode</FormLabel>
+                                            <FormDescription>
+                                                If enabled, all users will see the maintenance page.
+                                            </FormDescription>
+                                        </div>
+                                        <FormControl>
+                                            <Switch
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={settingsForm.control}
+                                name="maintenanceMessage"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Maintenance Message</FormLabel>
+                                        <FormControl>
+                                            <Textarea
+                                                placeholder="Tell users what's happening..."
+                                                className="resize-none"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormDescription>
+                                            This message will be displayed to users on the maintenance page.
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <Button type="submit">Save Maintenance Settings</Button>
+                        </form>
+                    </Form>
+                </CardContent>
+            </Card>
 
             {/* Admin Wallets */}
             <Card>

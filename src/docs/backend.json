@@ -1,0 +1,386 @@
+
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the InvestPro Wallet application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "googleId": {
+          "type": "string",
+          "description": "The unique identifier for the user provided by Google."
+        },
+        "referralCode": {
+          "type": "string",
+          "description": "The unique referral code for the user."
+        },
+        "investments": {
+          "type": "array",
+          "description": "List of active investments for the user.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "planId": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "startDate": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "amount": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "referrals": {
+          "type": "array",
+          "description": "List of users who have used this user's referral code.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "userId": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "isAdmin": {
+          "type": "boolean",
+          "description": "Flag to indicate if the user has admin privileges."
+        }
+      },
+      "required": [
+        "id",
+        "googleId",
+        "referralCode"
+      ]
+    },
+    "Wallet": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Wallet",
+      "type": "object",
+      "description": "Represents a user's wallet within the InvestPro Wallet application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the wallet."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:1 Wallet)"
+        },
+        "balance": {
+          "type": "number",
+          "description": "The current balance of the wallet."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "balance"
+      ]
+    },
+    "Transaction": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Transaction",
+      "type": "object",
+      "description": "Represents a transaction (deposit or withdrawal) in the InvestPro Wallet application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the transaction."
+        },
+        "walletId": {
+          "type": "string",
+          "description": "Reference to Wallet. (Relationship: Wallet 1:N Transaction)"
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of transaction (deposit or withdrawal).",
+          "enum": ["Deposit", "Withdrawal", "Investment"]
+        },
+        "amount": {
+          "type": "number",
+          "description": "The amount of the transaction."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The timestamp of the transaction.",
+          "format": "date-time"
+        },
+        "accountHolderName": {
+          "type": "string",
+          "description": "Account holder name for deposit verification"
+        },
+        "accountNumber": {
+          "type": "string",
+          "description": "Account number for deposit or withdrawal."
+        },
+        "transactionId": {
+          "type": "string",
+          "description": "Transaction ID provided by the payment gateway (e.g., JazzCash, Easypaisa)."
+        },
+        "status": {
+            "type": "string",
+            "description": "The status of the transaction.",
+            "enum": ["Pending", "Completed", "Failed"]
+        }
+      },
+      "required": [
+        "id",
+        "walletId",
+        "type",
+        "amount",
+        "timestamp",
+        "status"
+      ]
+    },
+    "InvestmentPlan": {
+      "title": "InvestmentPlan",
+      "type": "object",
+      "description": "Represents an investment plan available in the InvestPro Wallet application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the investment plan."
+        },
+        "name": {
+          "type": "string"
+        },
+        "categoryId": {
+          "type": "string"
+        },
+        "dailyReturn": {
+          "type": "number"
+        },
+        "period": {
+          "type": "number"
+        },
+        "minInvest": {
+          "type": "number"
+        },
+        "imageUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of an image for the investment plan."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "categoryId",
+        "dailyReturn",
+        "period",
+        "minInvest"
+      ]
+    },
+    "InvestmentCategory": {
+        "title": "Investment Category",
+        "type": "object",
+        "description": "Represents a category for grouping investment plans.",
+        "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "description": { "type": "string" }
+        },
+        "required": ["id", "name"]
+    },
+    "AdminWalletDetail": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AdminWalletDetail",
+      "type": "object",
+      "description": "Represents the admin wallet details for deposits.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the admin wallet detail."
+        },
+        "walletName": {
+          "type": "string",
+          "description": "Name of the admin wallet."
+        },
+        "accountNumber": {
+          "type": "string",
+          "description": "Admin wallet account number."
+        },
+        "accountHolderName": {
+          "type": "string",
+          "description": "Admin wallet account holder name."
+        }
+      },
+      "required": [
+        "id",
+        "walletName",
+        "accountNumber",
+        "accountHolderName"
+      ]
+    },
+    "AppSettings": {
+        "title": "Application Settings",
+        "type": "object",
+        "description": "Global settings for the application, like transaction limits and maintenance mode.",
+        "properties": {
+            "id": {
+                "type": "string",
+                "description": "Unique identifier for the settings document."
+            },
+            "minDeposit": {
+                "type": "number"
+            },
+            "maxDeposit": {
+                "type": "number"
+            },
+            "minWithdrawal": {
+                "type": "number"
+            },
+            "maxWithdrawal": {
+                "type": "number"
+            },
+            "maintenanceMode": {
+                "type": "boolean",
+                "description": "Flag to enable or disable maintenance mode for the entire application."
+            },
+            "maintenanceMessage": {
+                "type": "string",
+                "description": "The message to display to users when maintenance mode is active."
+            }
+        },
+        "required": [
+            "id",
+            "minDeposit",
+            "maxDeposit",
+            "minWithdrawal",
+            "maxWithdrawal",
+            "maintenanceMode"
+        ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "google.com"
+    ],
+    "customClaims": {
+      "isAdmin": {
+        "type": "boolean"
+      }
+    }
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles.  `userId` is `request.auth.uid`. Admins have read access to all user documents.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, matching their Firebase Auth UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/wallet",
+        "definition": {
+          "entityName": "Wallet",
+          "schema": {
+            "$ref": "#/backend/entities/Wallet"
+          },
+          "description": "Stores the wallet information for each user. Path-based ownership enforces security.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, matching their Firebase Auth UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/wallet/transactions/{transactionId}",
+        "definition": {
+          "entityName": "Transaction",
+          "schema": {
+            "$ref": "#/backend/entities/Transaction"
+          },
+          "description": "Stores transaction history for each user's wallet. Path-based ownership enforces security.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, matching their Firebase Auth UID."
+            },
+            {
+              "name": "transactionId",
+              "description": "The unique identifier of the transaction."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/investment_categories/{categoryId}",
+        "definition": {
+            "entityName": "InvestmentCategory",
+            "schema": { "$ref": "#/backend/entities/InvestmentCategory"},
+            "description": "Stores investment plan categories. Publicly readable, admin-only writable."
+        }
+      },
+      {
+        "path": "/investment_plans/{investmentPlanId}",
+        "definition": {
+          "entityName": "InvestmentPlan",
+          "schema": {
+            "$ref": "#/backend/entities/InvestmentPlan"
+          },
+          "description": "Stores the available investment plans. Write access should be restricted to authorized roles.",
+          "params": [
+            {
+              "name": "investmentPlanId",
+              "description": "The unique identifier of the investment plan."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/admin_wallet_details/{adminWalletDetailId}",
+        "definition": {
+          "entityName": "AdminWalletDetail",
+          "schema": {
+            "$ref": "#/backend/entities/AdminWalletDetail"
+          },
+          "description": "Stores admin wallet details for deposit verification.  Write access should be restricted to authorized roles.",
+          "params": [
+            {
+              "name": "adminWalletDetailId",
+              "description": "The unique identifier of the admin wallet detail."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/app_settings/{settingsId}",
+        "definition": {
+          "entityName": "AppSettings",
+          "schema": { "$ref": "#/backend/entities/AppSettings" },
+          "description": "Stores global application settings. Publicly readable, admin-only writable. The document ID is typically 'global'."
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to ensure authorization independence, clarity, and scalability for the InvestPro Wallet application. It leverages path-based ownership for user-specific data and structural segregation to maintain a homogeneous security posture within each collection. Denormalization is employed to avoid `get()` calls in security rules and ensure atomic operations.\n\n*   **Users:** Each user has their own document in the `/users` collection. This allows for simple, path-based security rules that restrict access to a user's data only to themselves. Admins are granted read access to all user documents for management purposes.\n*   **Wallets:** Each user has a single associated wallet stored in `/users/{userId}/wallet`. Path-based ownership ensures only the user can access their wallet.\n*   **Transactions:** Each wallet has multiple transactions, stored in `/users/{userId}/wallet/transactions/{transactionId}`. Again, path-based ownership ensures only the user can access their transactions.\n*   **Investment Plans & Categories:** Investment plans and their categories are stored in root-level collections. These are globally accessible for reading but writes are restricted to admins.\n*   **App Settings:** A single document at `/app_settings/global` stores settings like transaction limits and maintenance mode status, allowing public read access for the client and write access only for admins."
+  }
+}
