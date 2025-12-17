@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useFirestore } from "@/firebase/provider";
 import { useDoc, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, writeBatch } from "firebase/firestore";
+import { doc, writeBatch, collection } from "firebase/firestore";
 import type { AdminWallet, AppSettings } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 
