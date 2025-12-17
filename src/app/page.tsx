@@ -5,6 +5,7 @@ import { useUser, useDoc, useMemoFirebase, useCollection } from "@/firebase";
 import { doc, collection, query, where, Timestamp } from "firebase/firestore";
 import { useFirestore } from "@/firebase/provider";
 import { DashboardStats } from "@/components/DashboardStats";
+import { AdvertisementCard } from '@/components/AdvertisementCard';
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
@@ -81,6 +82,9 @@ export default function Home() {
         totalAssets={totalAssets}
         teamIncome={teamIncome}
       />
+      
+      <AdvertisementCard />
+
     </div>
   );
 }
