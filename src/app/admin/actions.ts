@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getAuth } from 'firebase-admin/auth';
@@ -6,22 +7,6 @@ import { initFirebaseAdmin } from '@/firebase/server-init';
 
 // Initialize Firebase Admin SDK
 initFirebaseAdmin();
-
-export async function setUserRole(uid: string, role: 'user' | 'admin'): Promise<{ success: boolean, message: string }> {
-    try {
-        // Set custom claims on the user
-        await getAuth().setCustomUserClaims(uid, { role });
-
-        // Also update the user's document in Firestore
-        const userDocRef = getFirestore().collection('users').doc(uid);
-        await userDocRef.update({ role });
-        
-        return { success: true, message: `User role updated to ${role}.` };
-    } catch (error: any) {
-        console.error(`Error setting role for user ${uid}:`, error);
-        return { success: false, message: error.message || 'Failed to set user role.' };
-    }
-}
 
 export async function blockUser(uid: string, disabled: boolean): Promise<{ success: boolean, message: string }> {
     try {

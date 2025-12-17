@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -44,7 +45,7 @@ import type { AppSettings } from '@/lib/data';
 import { MaintenancePage } from '@/components/MaintenancePage';
 
 type AppUser = {
-  role?: 'user' | 'admin';
+  // The user role is determined by security rules, not a field.
 }
 
 const allNavItems = [
@@ -62,6 +63,8 @@ const allNavItems = [
   { href: '/admin/settings', label: 'Settings', icon: Settings, roles: ['admin'] },
 ];
 
+const ADMIN_EMAIL = "salmankhaskheli885@gmail.com";
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -72,9 +75,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   
   const [isClient, setIsClient] = useState(false);
 
-  const userDocRef = useMemoFirebase(() => (user ? doc(firestore, "users", user.uid) : null), [firestore, user]);
-  const { data: userData, isLoading: isUserDocLoading } = useDoc<AppUser>(userDocRef);
-
   const appSettingsDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'app_settings', 'global') : null, [firestore]);
   const { data: appSettings, isLoading: areSettingsLoading } = useDoc<AppSettings>(appSettingsDocRef);
 
@@ -82,12 +82,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setIsClient(true);
   }, []);
 
-  const userRole = useMemo(() => userData?.role ?? 'user', [userData]);
-  const isAdmin = userRole === 'admin';
-
+  const isAdmin = useMemo(() => user?.email === ADMIN_EMAIL, [user]);
+  const userRole = isAdmin ? 'admin' : 'user';
+  
   // Redirect logic
   useEffect(() => {
-    if (!isUserLoading && !isUserDocLoading) {
+    if (!isUserLoading) {
       if (user) { // User is logged in
         if (isAdmin && !pathname.startsWith('/admin')) {
           router.replace('/admin');
@@ -98,7 +98,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         router.replace('/login');
       }
     }
-  }, [user, isUserLoading, isUserDocLoading, isAdmin, pathname, router]);
+  }, [user, isUserLoading, isAdmin, pathname, router]);
 
   const handleLogout = () => {
     if (auth) {
@@ -150,7 +150,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   // Show maintenance page if enabled, but not for Admins
-  if (appSettings?.maintenanceMode && userRole !== 'admin') {
+  if (appSettings?.maintenanceMode && !isAdmin) {
     return <MaintenancePage message={appSettings.maintenanceMessage} />
   }
 
@@ -192,7 +192,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             >
               <RefreshCw className="h-5 w-5 text-muted-foreground" />
             </Button>
-            {isUserLoading || isUserDocLoading ? (
+            {isUserLoading ? (
               <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
             ) : user ? (
               <DropdownMenu>

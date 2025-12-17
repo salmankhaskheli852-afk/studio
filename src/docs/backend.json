@@ -57,11 +57,6 @@
             }
           }
         },
-        "role": {
-          "type": "string",
-          "description": "The role of the user, which determines their access level.",
-          "enum": ["user", "admin"]
-        },
         "disabled": {
           "type": "boolean",
           "description": "Flag to indicate if the user account is disabled/blocked."
@@ -70,8 +65,7 @@
       "required": [
         "id",
         "googleId",
-        "referralCode",
-        "role"
+        "referralCode"
       ]
     },
     "Wallet": {
@@ -293,13 +287,7 @@
   "auth": {
     "providers": [
       "google.com"
-    ],
-    "customClaims": {
-      "role": {
-        "type": "string",
-        "enum": ["user", "admin"]
-      }
-    }
+    ]
   },
   "firestore": {
     "structure": [

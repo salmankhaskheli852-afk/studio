@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -16,7 +17,6 @@ type AppUser = {
   id: string;
   displayName: string;
   email: string;
-  role?: 'user' | 'admin';
   photoURL?: string;
   referralCode?: string;
   investments?: any[];
@@ -26,8 +26,10 @@ type Wallet = {
     balance: number;
 }
 
-const RoleIcon = ({ role }: { role?: AppUser['role'] }) => {
-    if (role === 'admin') {
+const ADMIN_EMAIL = "salmankhaskheli885@gmail.com";
+
+const RoleIcon = ({ email }: { email?: string }) => {
+    if (email === ADMIN_EMAIL) {
         return <ShieldCheck className="h-6 w-6 text-primary" />;
     }
     return null;
@@ -109,7 +111,7 @@ export default function UserDetailsPage() {
                     <div>
                         <CardTitle className="text-2xl flex items-center gap-2">
                             {userData.displayName}
-                            <RoleIcon role={userData.role} />
+                            <RoleIcon email={userData.email} />
                         </CardTitle>
                         <CardDescription>{userData.email}</CardDescription>
                          <p className="text-sm text-muted-foreground font-mono pt-1">ID: {userData.id}</p>

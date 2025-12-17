@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -7,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useUser, useCollection, useMemoFirebase } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
 import { collection, query, getDocs, collectionGroup } from "firebase/firestore";
-import { MoreHorizontal, ShieldCheck, Search, Ban, UserCheck, UserX } from "lucide-react";
+import { MoreHorizontal, Search, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -31,13 +32,12 @@ import {
 import type { Transaction } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { AdminStats } from '@/components/AdminStats';
-import { blockUser, deleteUser, setUserRole } from './actions';
+import { blockUser, deleteUser } from './actions';
 
 type AppUser = {
   id: string;
   displayName: string;
   email: string;
-  role?: 'user' | 'admin';
   photoURL?: string;
   referralCode?: string;
   investments?: any[];
@@ -121,7 +121,7 @@ export function AdminClient() {
   }, [allTransactionsQuery]);
 
 
-  const handleAction = async (action: 'block' | 'unblock' | 'delete' | 'setRole', targetUser: AppUser, role?: AppUser['role']) => {
+  const handleAction = async (action: 'block' | 'unblock' | 'delete', targetUser: AppUser) => {
     setIsActionLoading(targetUser.id);
     try {
         let result;
@@ -130,8 +130,6 @@ export function AdminClient() {
         } else if (action === 'block' || action === 'unblock') {
             const shouldBlock = action === 'block';
             result = await blockUser(targetUser.id, shouldBlock);
-        } else if (action === 'setRole' && role) {
-            result = await setUserRole(targetUser.id, role);
         } else {
             throw new Error("Invalid action.");
         }
@@ -156,16 +154,6 @@ export function AdminClient() {
         setIsActionLoading(null);
     }
   }
-
-  const getRoleBadge = (role?: AppUser['role']) => {
-    switch (role) {
-      case 'admin':
-        return <span className="flex items-center gap-2 text-primary font-semibold"><ShieldCheck className="h-4 w-4"/> Admin</span>;
-      default:
-        return "User";
-    }
-  };
-
 
   if (isAdminLoading || areUsersLoading) {
     return <div className="flex justify-center items-center h-full">
@@ -216,7 +204,6 @@ export function AdminClient() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Role</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -229,9 +216,6 @@ export function AdminClient() {
                    <TableCell>
                     {u.disabled ? <span className="flex items-center gap-2 text-destructive font-semibold"><Ban className="h-4 w-4"/> Blocked</span> : <span className="text-emerald-600">Active</span>}
                   </TableCell>
-                   <TableCell>
-                     {getRoleBadge(u.role)}
-                  </TableCell>
                   <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -243,17 +227,6 @@ export function AdminClient() {
                             <DropdownMenuItem asChild>
                                <Link href={`/admin/users/${u.id}`}>View Details</Link>
                             </DropdownMenuItem>
-                            {u.role !== 'admin' ? (
-                                <DropdownMenuItem onClick={() => handleAction('setRole', u, 'admin')}>
-                                    <UserCheck className="mr-2 h-4 w-4" />
-                                    <span>Make Admin</span>
-                                </DropdownMenuItem>
-                            ) : (
-                                <DropdownMenuItem onClick={() => handleAction('setRole', u, 'user')}>
-                                    <UserX className="mr-2 h-4 w-4" />
-                                    <span>Remove Admin</span>
-                                </DropdownMenuItem>
-                            )}
                            <DropdownMenuSeparator />
                            <DropdownMenuItem onClick={() => handleAction(u.disabled ? 'unblock' : 'block', u)}>
                                 {u.disabled ? "Unblock User" : "Block User"}
