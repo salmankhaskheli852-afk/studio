@@ -58,6 +58,9 @@ const allNavItems = [
   { href: '/wallet', label: 'Wallet', icon: Wallet, roles: ['user'] },
   { href: '/my-bank', label: 'History', icon: Banknote, roles: ['user'] },
   { href: '/invite', label: 'Invite', icon: Users, roles: ['user'] },
+  { href: '/terms', label: 'Terms & Conditions', icon: FileText, roles: ['user'] },
+  { href: '/security', label: 'Security', icon: ShieldCheck, roles: ['user'] },
+  { href: 'whatsapp', label: 'Service', icon: LifeBuoy, roles: ['user', 'admin'] },
 
   // Admin items
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
@@ -66,11 +69,6 @@ const allNavItems = [
   { href: '/admin/investments', label: 'Investments', icon: Package, roles: ['admin'] },
   { href: '/admin/settings', label: 'Settings', icon: Settings, roles: ['admin'] },
   { href: '/admin/help', label: 'Help', icon: LifeBuoy, roles: ['admin'] },
-  
-  // Shared items
-  { href: '/terms', label: 'Terms & Conditions', icon: FileText, roles: ['user', 'admin'] },
-  { href: '/security', label: 'Security', icon: ShieldCheck, roles: ['user', 'admin'] },
-  { href: 'whatsapp', label: 'Service', icon: LifeBuoy, roles: ['user', 'admin'] },
 ];
 
 const ADMIN_EMAIL = "salmankhaskheli885@gmail.com";
@@ -216,7 +214,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <NavContent />
             </SheetContent>
           </Sheet>
-          <div className="flex w-full items-center justify-end gap-4">
+          <div className="w-full flex-1">
+             {/* This is a placeholder for a search bar or other left-aligned header content */}
+          </div>
+          <div className="flex items-center gap-4">
+             <div className="hidden md:flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
+                <ShieldCheck className="h-4 w-4" />
+                <span>VERIFIED BY WB AUTHORITY</span>
+            </div>
             <Button
               variant="ghost"
               size="icon"
