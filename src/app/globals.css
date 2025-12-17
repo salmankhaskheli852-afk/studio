@@ -116,4 +116,45 @@ body {
     right: -120px;
     filter: blur(10px);
   }
+
+  /* New styles for colorful dialogs with bubbles */
+  .colorful-dialog-bg {
+    @apply bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 relative overflow-hidden;
+  }
+  .dark .colorful-dialog-bg {
+    @apply bg-gradient-to-br from-blue-900/50 via-purple-900/50 to-pink-900/50;
+  }
+
+  .bubble-texture::before,
+  .bubble-texture::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.15;
+    filter: blur(15px);
+    z-index: 0;
+  }
+
+  .bubble-texture::before {
+    width: 250px;
+    height: 250px;
+    top: -80px;
+    left: -100px;
+    background-color: #aed6f1; /* Light Blue */
+  }
+
+  .bubble-texture::after {
+    width: 300px;
+    height: 300px;
+    bottom: -120px;
+    right: -150px;
+    background-color: #f5b7b1; /* Light Pink */
+  }
+
+  /* Ensure content is above bubbles */
+  .dialog-content-wrapper > * {
+      position: relative;
+      z-index: 1;
+  }
+
 }
