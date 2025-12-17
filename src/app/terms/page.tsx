@@ -30,7 +30,7 @@ export default function TermsPage() {
                 </CardHeader>
                 <CardContent className="space-y-4 text-muted-foreground">
                     <p>
-                        All investments involve risk. The value of your investment may go up or down, and you may not get back the amount you originally invested. Past performance is not an indicator of future results.
+                        The protection of your investment is our top priority. We give you a full guarantee that your money is safe and will not go anywhere. You can invest with complete confidence.
                     </p>
                     <p>
                         InvestPro Wallet provides investment plans with calculated returns. However, we do not guarantee any returns. All financial decisions made by you are your own, and you should seek independent financial advice if necessary.
