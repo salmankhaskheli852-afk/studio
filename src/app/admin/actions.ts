@@ -8,6 +8,18 @@ import { initFirebaseAdmin } from '@/firebase/server-init';
 // Initialize Firebase Admin SDK
 initFirebaseAdmin();
 
+export async function setUserRole(uid: string, role: 'admin' | 'user'): Promise<{ success: boolean, message: string }> {
+    try {
+        const userDocRef = getFirestore().collection('users').doc(uid);
+        await userDocRef.update({ role });
+        const action = role === 'admin' ? 'promoted to Admin' : 'demoted to User';
+        return { success: true, message: `User successfully ${action}.` };
+    } catch (error: any) {
+        console.error(`Error updating user role for ${uid}:`, error);
+        return { success: false, message: error.message || 'Failed to update user role.' };
+    }
+}
+
 export async function blockUser(uid: string, disabled: boolean): Promise<{ success: boolean, message: string }> {
     try {
         await getAuth().updateUser(uid, { disabled });
@@ -59,5 +71,3 @@ export async function deleteUser(uid: string): Promise<{ success: boolean, messa
         return { success: false, message: error.message || 'Failed to delete user.' };
     }
 }
-
-    

@@ -9,7 +9,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the user."
+          "description": "Unique identifier for the user (Firebase Auth UID)."
         },
         "googleId": {
           "type": "string",
@@ -57,15 +57,21 @@
             }
           }
         },
-        "isAdmin": {
+        "disabled": {
           "type": "boolean",
-          "description": "Flag to indicate if the user has admin privileges."
+          "description": "Flag to indicate if the user account is disabled/blocked."
+        },
+        "role": {
+          "type": "string",
+          "description": "The role of the user.",
+          "enum": ["user", "admin"]
         }
       },
       "required": [
         "id",
         "googleId",
-        "referralCode"
+        "referralCode",
+        "role"
       ]
     },
     "Wallet": {
@@ -123,7 +129,7 @@
         },
         "accountHolderName": {
           "type": "string",
-          "description": "Account holder name for deposit verification"
+          "description": "Account holder name for deposit verification or withdrawal."
         },
         "accountNumber": {
           "type": "string",
@@ -137,6 +143,15 @@
             "type": "string",
             "description": "The status of the transaction.",
             "enum": ["Pending", "Completed", "Failed"]
+        },
+        "method": {
+            "type": "string",
+            "description": "The method used for withdrawal (e.g., JazzCash, Easypaisa, Bank).",
+            "enum": ["JazzCash", "Easypaisa", "Bank"]
+        },
+        "bankName": {
+            "type": "string",
+            "description": "The name of the bank if the withdrawal method is Bank."
         }
       },
       "required": [
@@ -231,43 +246,54 @@
     "AppSettings": {
         "title": "Application Settings",
         "type": "object",
-        "description": "Global settings for the application, like transaction limits.",
+        "description": "Global settings for the application, like transaction limits and feature toggles.",
         "properties": {
             "id": {
                 "type": "string",
                 "description": "Unique identifier for the settings document."
             },
-            "minDeposit": {
-                "type": "number"
+            "minDeposit": { "type": "number" },
+            "maxDeposit": { "type": "number" },
+            "minWithdrawal": { "type": "number" },
+            "maxWithdrawal": { "type": "number" },
+            "maintenanceMode": {
+                "type": "boolean",
+                "description": "Flag to enable or disable maintenance mode for the entire application."
             },
-            "maxDeposit": {
-                "type": "number"
+            "maintenanceMessage": {
+                "type": "string",
+                "description": "The message to display to users when maintenance mode is active."
             },
-            "minWithdrawal": {
-                "type": "number"
+            "investmentsEnabled": {
+                "type": "boolean",
+                "description": "Flag to enable or disable new investments globally."
             },
-            "maxWithdrawal": {
-                "type": "number"
-            }
+            "depositJazzCashEnabled": { "type": "boolean" },
+            "depositEasypaisaEnabled": { "type": "boolean" },
+            "withdrawalJazzCashEnabled": { "type": "boolean" },
+            "withdrawalEasypaisaEnabled": { "type": "boolean" },
+            "withdrawalBankEnabled": { "type": "boolean" }
         },
         "required": [
             "id",
             "minDeposit",
             "maxDeposit",
             "minWithdrawal",
-            "maxWithdrawal"
+            "maxWithdrawal",
+            "maintenanceMode",
+            "investmentsEnabled",
+            "depositJazzCashEnabled",
+            "depositEasypaisaEnabled",
+            "withdrawalJazzCashEnabled",
+            "withdrawalEasypaisaEnabled",
+            "withdrawalBankEnabled"
         ]
     }
   },
   "auth": {
     "providers": [
       "google.com"
-    ],
-    "customClaims": {
-      "isAdmin": {
-        "type": "boolean"
-      }
-    }
+    ]
   },
   "firestore": {
     "structure": [
@@ -368,10 +394,10 @@
         "definition": {
           "entityName": "AppSettings",
           "schema": { "$ref": "#/backend/entities/AppSettings" },
-          "description": "Stores global application settings. Publicly readable, admin-only writable."
+          "description": "Stores global application settings. Publicly readable, admin-only writable. The document ID is typically 'global'."
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to ensure authorization independence, clarity, and scalability for the InvestPro Wallet application. It leverages path-based ownership for user-specific data and structural segregation to maintain a homogeneous security posture within each collection. Denormalization is employed to avoid `get()` calls in security rules and ensure atomic operations.\n\n*   **Users:** Each user has their own document in the `/users` collection. This allows for simple, path-based security rules that restrict access to a user's data only to themselves. Admins are granted read access to all user documents for management purposes.\n*   **Wallets:** Each user has a single associated wallet stored in `/users/{userId}/wallet`. Path-based ownership ensures only the user can access their wallet.\n*   **Transactions:** Each wallet has multiple transactions, stored in `/users/{userId}/wallet/transactions/{transactionId}`. Again, path-based ownership ensures only the user can access their transactions.\n*   **Investment Plans & Categories:** Investment plans and their categories are stored in root-level collections. These are globally accessible for reading but writes are restricted to admins."
+    "reasoning": "The Firestore data structure is designed to ensure authorization independence, clarity, and scalability for the InvestPro Wallet application. It leverages path-based ownership for user-specific data and structural segregation to maintain a homogeneous security posture within each collection. Denormalization is employed to avoid `get()` calls in security rules and ensure atomic operations.\n\n*   **Users:** Each user has their own document in the `/users` collection. This allows for simple, path-based security rules that restrict access to a user's data only to themselves. Admins are granted read access to all user documents for management purposes.\n*   **Wallets:** Each user has a single associated wallet stored in `/users/{userId}/wallet`. Path-based ownership ensures only the user can access their wallet.\n*   **Transactions:** Each wallet has multiple transactions, stored in `/users/{userId}/wallet/transactions/{transactionId}`. Again, path-based ownership ensures only the user can access their transactions.\n*   **Investment Plans & Categories:** Investment plans and their categories are stored in root-level collections. These are globally accessible for reading but writes are restricted to admins.\n*   **App Settings:** A single document at `/app_settings/global` stores settings like transaction limits and maintenance mode status, allowing public read access for the client and write access only for admins."
   }
 }

@@ -13,7 +13,9 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && request.auth.token.email == "salmankhaskheli885@gmail.com";
+      let isRoleAdmin = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      let isEmailAdmin = request.auth.token.email == "salmankhaskheli885@gmail.com";
+      return isSignedIn() && (isRoleAdmin || isEmailAdmin);
     }
     
     function isExistingOwner(userId) {
@@ -54,7 +56,7 @@ service cloud.firestore {
     match /users/{userId}/wallet/{walletId}/transactions/{transactionId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId) && request.resource.data.walletId == userId;
+      allow create: if isOwner(userId);
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isOwner(userId);
     }
@@ -122,5 +124,3 @@ service cloud.firestore {
     }
   }
 }
-
-    

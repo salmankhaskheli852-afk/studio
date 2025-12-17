@@ -45,7 +45,7 @@ import type { AppSettings } from '@/lib/data';
 import { MaintenancePage } from '@/components/MaintenancePage';
 
 type AppUser = {
-  // The user role is determined by security rules, not a field.
+  role?: 'admin' | 'user';
 }
 
 const allNavItems = [
@@ -75,6 +75,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   
   const [isClient, setIsClient] = useState(false);
 
+  const userDocRef = useMemoFirebase(
+    () => (user ? doc(firestore, 'users', user.uid) : null),
+    [firestore, user]
+  );
+  const { data: userData } = useDoc<AppUser>(userDocRef);
+
   const appSettingsDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'app_settings', 'global') : null, [firestore]);
   const { data: appSettings, isLoading: areSettingsLoading } = useDoc<AppSettings>(appSettingsDocRef);
 
@@ -82,7 +88,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setIsClient(true);
   }, []);
 
-  const isAdmin = useMemo(() => user?.email === ADMIN_EMAIL, [user]);
+  const isAdmin = useMemo(() => user?.email === ADMIN_EMAIL || userData?.role === 'admin', [user, userData]);
   const userRole = isAdmin ? 'admin' : 'user';
   
   // Redirect logic
@@ -245,5 +251,3 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-
-    

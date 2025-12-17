@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useUser, useCollection, useMemoFirebase } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
 import { collection, query, getDocs, collectionGroup } from "firebase/firestore";
-import { MoreHorizontal, Search, Ban } from "lucide-react";
+import { MoreHorizontal, Search, Ban, ShieldCheck, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,12 +27,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import type { Transaction } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { AdminStats } from '@/components/AdminStats';
-import { blockUser, deleteUser } from './actions';
+import { blockUser, deleteUser, setUserRole } from './actions';
 
 type AppUser = {
   id: string;
@@ -42,7 +41,17 @@ type AppUser = {
   referralCode?: string;
   investments?: any[];
   disabled?: boolean;
+  role?: 'admin' | 'user';
 };
+
+const ADMIN_EMAIL = "salmankhaskheli885@gmail.com";
+
+const RoleDisplay = ({ user }: { user: AppUser }) => {
+    if (user.email === ADMIN_EMAIL || user.role === 'admin') {
+        return <span className="flex items-center gap-2 text-primary font-semibold"><ShieldCheck className="h-4 w-4"/> Admin</span>
+    }
+    return <span className="flex items-center gap-2 text-muted-foreground"><UserIcon className="h-4 w-4"/> User</span>
+}
 
 export function AdminClient() {
   const { user: adminUser, isUserLoading: isAdminLoading } = useUser();
@@ -121,7 +130,7 @@ export function AdminClient() {
   }, [allTransactionsQuery]);
 
 
-  const handleAction = async (action: 'block' | 'unblock' | 'delete', targetUser: AppUser) => {
+  const handleAction = async (action: 'block' | 'unblock' | 'delete' | 'setRole', targetUser: AppUser, role?: 'admin' | 'user') => {
     setIsActionLoading(targetUser.id);
     try {
         let result;
@@ -130,6 +139,8 @@ export function AdminClient() {
         } else if (action === 'block' || action === 'unblock') {
             const shouldBlock = action === 'block';
             result = await blockUser(targetUser.id, shouldBlock);
+        } else if (action === 'setRole' && role) {
+            result = await setUserRole(targetUser.id, role);
         } else {
             throw new Error("Invalid action.");
         }
@@ -203,6 +214,7 @@ export function AdminClient() {
                 <TableHead>User ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -213,6 +225,7 @@ export function AdminClient() {
                   <TableCell className="font-mono">{u.id}</TableCell>
                   <TableCell className="font-medium">{u.displayName}</TableCell>
                   <TableCell>{u.email}</TableCell>
+                  <TableCell><RoleDisplay user={u} /></TableCell>
                    <TableCell>
                     {u.disabled ? <span className="flex items-center gap-2 text-destructive font-semibold"><Ban className="h-4 w-4"/> Blocked</span> : <span className="text-emerald-600">Active</span>}
                   </TableCell>
@@ -228,6 +241,11 @@ export function AdminClient() {
                                <Link href={`/admin/users/${u.id}`}>View Details</Link>
                             </DropdownMenuItem>
                            <DropdownMenuSeparator />
+                            {u.role === 'admin' ? (
+                                <DropdownMenuItem onClick={() => handleAction('setRole', u, 'user')}>Remove Admin</DropdownMenuItem>
+                            ) : (
+                                <DropdownMenuItem onClick={() => handleAction('setRole', u, 'admin')}>Make Admin</DropdownMenuItem>
+                            )}
                            <DropdownMenuItem onClick={() => handleAction(u.disabled ? 'unblock' : 'block', u)}>
                                 {u.disabled ? "Unblock User" : "Block User"}
                             </DropdownMenuItem>
@@ -260,5 +278,3 @@ export function AdminClient() {
     </div>
   );
 }
-
-    

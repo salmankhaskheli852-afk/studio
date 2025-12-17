@@ -32,13 +32,25 @@ export function LoginClient() {
 
   useEffect(() => {
     if (!isUserLoading && user) {
+        // Fetch the user document to check the role
+        const checkUserRole = async () => {
+            if (!firestore) return;
+            const userDocRef = doc(firestore, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists() && userDoc.data().role === 'admin') {
+                router.push('/admin');
+            } else {
+                router.push('/');
+            }
+        };
+
         if (user.email === ADMIN_EMAIL) {
             router.push('/admin');
         } else {
-            router.push('/');
+            checkUserRole();
         }
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, router, firestore]);
 
   const createUserDocuments = async (firebaseUser: FirebaseUser) => {
     if (!firestore) return;
@@ -56,6 +68,9 @@ export function LoginClient() {
         Math.random().toString(36).substring(2, 8).toUpperCase() +
         Math.random().toString(36).substring(2, 8).toUpperCase();
 
+      // Default role is 'user'. The permanent admin email will be handled by security rules.
+      const initialRole = firebaseUser.email === ADMIN_EMAIL ? 'admin' : 'user';
+
       await setDoc(userDocRef, {
         id: firebaseUser.uid,
         googleId: firebaseUser.providerData
@@ -68,6 +83,8 @@ export function LoginClient() {
         investments: [],
         referrals: [],
         createdAt: serverTimestamp(),
+        role: initialRole, // Set role on creation
+        disabled: false,
       });
 
       await setDoc(walletDocRef, {
@@ -88,6 +105,7 @@ export function LoginClient() {
         await createUserDocuments(signedInUser);
 
         // Redirect is handled by the useEffect hook
+        // This provides a quicker initial redirect for the main admin
         if (signedInUser.email === ADMIN_EMAIL) {
             router.push('/admin');
         } else {
@@ -140,5 +158,3 @@ export function LoginClient() {
     </div>
   );
 }
-
-    
