@@ -64,7 +64,7 @@ const allNavItems = [
   { href: '/admin/withdrawals', label: 'Withdrawal Requests', icon: ArrowUpFromDot, roles: ['admin'] },
   { href: '/admin/investments', label: 'Investments', icon: Package, roles: ['admin'] },
   { href: '/admin/settings', label: 'Settings', icon: Settings, roles: ['admin'] },
-  { href: '/customer-service', label: 'Help', icon: LifeBuoy, roles: ['admin'], isExternal: true },
+  { href: '/admin/help', label: 'Help', icon: LifeBuoy, roles: ['admin'] },
 ];
 
 const ADMIN_EMAIL = "salmankhaskheli885@gmail.com";
