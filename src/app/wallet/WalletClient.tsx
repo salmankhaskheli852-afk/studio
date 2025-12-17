@@ -46,7 +46,7 @@ const depositSchema = z.object({
   }),
   accountHolderName: z.string().min(3, 'Name must be at least 3 characters.'),
   accountNumber: z.string().min(11, 'Please enter a valid account number.'),
-  amount: z.coerce.number().positive('Amount must be positive.'),
+  amount: z.coerce.number().min(1000, 'Minimum deposit is 1,000.').max(5000000, 'Maximum deposit is 5,000,000.'),
   transactionId: z.string().min(5, 'Please enter a valid Transaction ID (TID).'),
 });
 
@@ -57,7 +57,7 @@ const withdrawSchema = z.object({
   }),
   accountHolderName: z.string().min(3, 'Name must be at least 3 characters.'),
   accountNumber: z.string().min(11, 'Please enter a valid account number.'),
-  amount: z.coerce.number().positive('Amount must be positive.'),
+  amount: z.coerce.number().min(1000, 'Minimum withdrawal is 1,000.').max(5000000, 'Maximum withdrawal is 5,000,000.'),
 });
 
 
@@ -79,7 +79,7 @@ export function WalletClient() {
     defaultValues: {
       accountHolderName: '',
       accountNumber: '',
-      amount: 0,
+      amount: 1000,
       transactionId: '',
     },
   });
@@ -89,7 +89,7 @@ export function WalletClient() {
     defaultValues: {
       accountHolderName: '',
       accountNumber: '',
-      amount: 0,
+      amount: 1000,
     },
   });
 
