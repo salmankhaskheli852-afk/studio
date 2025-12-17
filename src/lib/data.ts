@@ -47,6 +47,7 @@ export type AppSettings = {
     withdrawalEasypaisaEnabled: boolean;
     withdrawalBankEnabled: boolean;
     customerCareWhatsapp?: string;
+    websiteUrl?: string;
 }
 
     
