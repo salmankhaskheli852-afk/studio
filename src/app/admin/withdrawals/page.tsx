@@ -5,6 +5,8 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import { useFirestore } from "@/firebase/provider";
 import { collectionGroup, query, where, getDocs, doc, writeBatch, increment, getDoc } from "firebase/firestore";
 import type { Transaction } from "@/lib/data";
@@ -17,6 +19,8 @@ type WithdrawalRequest = Transaction & {
     transactionPath: string;
     withdrawalMethod?: string;
     bankName?: string;
+    accountHolder?: string;
+    accountNumber?: string;
 };
 
 export default function WithdrawalRequestsPage() {
@@ -24,6 +28,7 @@ export default function WithdrawalRequestsPage() {
     const { toast } = useToast();
     const [requests, setRequests] = useState<WithdrawalRequest[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const fetchRequests = useCallback(async () => {
         if (!firestore) return;
@@ -64,6 +69,8 @@ export default function WithdrawalRequestsPage() {
                     transactionPath: transactionDoc.ref.path,
                     withdrawalMethod: data.method,
                     bankName: data.bankName,
+                    accountHolder: data.accountHolderName, // Consistent naming
+                    accountNumber: data.accountNumber,
                 });
             }
             setRequests(fetchedRequests);
@@ -77,6 +84,15 @@ export default function WithdrawalRequestsPage() {
     useEffect(() => {
         fetchRequests();
     }, [fetchRequests]);
+    
+    const filteredRequests = useMemo(() => {
+        return requests.filter(req =>
+            req.userDisplayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            req.userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (req.accountHolder && req.accountHolder.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (req.accountNumber && req.accountNumber.includes(searchTerm))
+        );
+    }, [requests, searchTerm]);
 
     const handleRequest = async (request: WithdrawalRequest, newStatus: 'Completed' | 'Failed') => {
         if (!firestore) return;
@@ -116,9 +132,22 @@ export default function WithdrawalRequestsPage() {
             </header>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Pending Withdrawals</CardTitle>
-                    <CardDescription>Total pending requests: {requests.length}</CardDescription>
+                 <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <CardTitle>Pending Withdrawals</CardTitle>
+                            <CardDescription>Total pending requests: {filteredRequests.length}</CardDescription>
+                        </div>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Search requests..."
+                                className="pl-10"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <Table>
@@ -134,7 +163,7 @@ export default function WithdrawalRequestsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {requests.length > 0 ? requests.map((req) => (
+                            {filteredRequests.length > 0 ? filteredRequests.map((req) => (
                                 <TableRow key={req.id}>
                                     <TableCell>
                                         <div className="font-medium">{req.userDisplayName}</div>
@@ -143,8 +172,8 @@ export default function WithdrawalRequestsPage() {
                                     </TableCell>
                                     <TableCell className="font-semibold text-red-600">{Math.abs(req.amount).toLocaleString()}</TableCell>
                                     <TableCell className="capitalize">{req.bankName || req.withdrawalMethod}</TableCell>
-                                    <TableCell>{(req as any).accountHolder}</TableCell>
-                                    <TableCell>{(req as any).accountNumber}</TableCell>
+                                    <TableCell>{req.accountHolder}</TableCell>
+                                    <TableCell>{req.accountNumber}</TableCell>
                                     <TableCell>{req.timestamp && (req.timestamp as any).seconds ? new Date((req.timestamp as any).seconds * 1000).toLocaleDateString() : 'N/A'}</TableCell>
                                     <TableCell className="text-right space-x-2">
                                         <Button size="sm" variant="outline" className="text-emerald-600 border-emerald-600 hover:bg-emerald-50 hover:text-emerald-700" onClick={() => handleRequest(req, 'Completed')}>Approve</Button>
@@ -153,7 +182,7 @@ export default function WithdrawalRequestsPage() {
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center h-24">No pending withdrawal requests.</TableCell>
+                                    <TableCell colSpan={7} className="text-center h-24">No matching withdrawal requests found.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>

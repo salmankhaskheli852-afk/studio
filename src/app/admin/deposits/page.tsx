@@ -1,10 +1,12 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import { useFirestore } from "@/firebase/provider";
 import { collectionGroup, query, getDocs, doc, writeBatch, increment, getDoc } from "firebase/firestore";
 import type { Transaction } from "@/lib/data";
@@ -25,6 +27,7 @@ export default function DepositRequestsPage() {
     const { toast } = useToast();
     const [requests, setRequests] = useState<TransactionWithUserDetails[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const fetchRequests = useCallback(async () => {
         if (!firestore) return;
@@ -116,6 +119,17 @@ export default function DepositRequestsPage() {
             });
         }
     };
+    
+    const filteredRequests = useMemo(() => {
+        return requests.filter(req => 
+            req.userDisplayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            req.userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (req.accountHolderName && req.accountHolderName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (req.accountNumber && req.accountNumber.includes(searchTerm)) ||
+            (req.transactionId && req.transactionId.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+    }, [requests, searchTerm]);
+
 
     if (isLoading) {
        return <div className="flex justify-center items-center h-full">
@@ -132,8 +146,21 @@ export default function DepositRequestsPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Pending Deposits</CardTitle>
-                    <CardDescription>Total pending requests: {requests.length}</CardDescription>
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <CardTitle>Pending Deposits</CardTitle>
+                            <CardDescription>Total pending requests: {filteredRequests.length}</CardDescription>
+                        </div>
+                         <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Search requests..."
+                                className="pl-10"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <Table>
@@ -149,7 +176,7 @@ export default function DepositRequestsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {requests.length > 0 ? requests.map((req) => (
+                            {filteredRequests.length > 0 ? filteredRequests.map((req) => (
                                 <TableRow key={req.id}>
                                     <TableCell>
                                         <div className="font-medium">{req.userDisplayName}</div>
@@ -168,7 +195,7 @@ export default function DepositRequestsPage() {
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center h-24">No pending deposit requests.</TableCell>
+                                    <TableCell colSpan={7} className="text-center h-24">No matching deposit requests found.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>

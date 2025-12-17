@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,7 +16,7 @@ import { useFirestore } from "@/firebase/provider";
 import { useCollection, useMemoFirebase } from '@/firebase';
 import { collection, addDoc, deleteDoc, updateDoc, doc } from "firebase/firestore";
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, Edit } from 'lucide-react';
+import { Trash2, Edit, Search } from 'lucide-react';
 import type { InvestmentCategory, InvestmentPlan } from '@/lib/data';
 
 // Schemas
@@ -43,6 +43,7 @@ export default function InvestmentsPage() {
     const [isPlanDialogOpen, setPlanDialogOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<InvestmentCategory | null>(null);
     const [editingPlan, setEditingPlan] = useState<InvestmentPlan | null>(null);
+    const [planSearchTerm, setPlanSearchTerm] = useState('');
 
     // Data fetching
     const categoriesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'investment_categories') : null, [firestore]);
@@ -50,6 +51,14 @@ export default function InvestmentsPage() {
 
     const plansQuery = useMemoFirebase(() => firestore ? collection(firestore, 'investment_plans') : null, [firestore]);
     const { data: plans, isLoading: arePlansLoading } = useCollection<InvestmentPlan>(plansQuery);
+    
+    const filteredPlans = useMemo(() => {
+        if (!plans) return [];
+        return plans.filter(plan => 
+            plan.name.toLowerCase().includes(planSearchTerm.toLowerCase())
+        );
+    }, [plans, planSearchTerm]);
+
 
     // Forms
     const categoryForm = useForm<z.infer<typeof categorySchema>>({ 
@@ -258,51 +267,62 @@ export default function InvestmentsPage() {
                             <CardTitle>Investment Plans</CardTitle>
                             <CardDescription>All available investment plans.</CardDescription>
                         </div>
-                        <Dialog open={isPlanDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) closePlanDialog(); else setPlanDialogOpen(true); }}>
-                            <DialogTrigger asChild><Button disabled={!categories || categories.length === 0}>Add Plan</Button></DialogTrigger>
-                             <DialogContent className="sm:max-w-lg">
-                                <DialogHeader>
-                                    <DialogTitle>{editingPlan ? "Edit" : "Add"} Plan</DialogTitle>
-                                </DialogHeader>
-                                <Form {...planForm}>
-                                    <form onSubmit={planForm.handleSubmit(handlePlanSubmit)} className="space-y-4">
-                                        <FormField control={planForm.control} name="name" render={({ field }) => (
-                                            <FormItem><FormLabel>Plan Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={planForm.control} name="categoryId" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Category</FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value}>
-                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
-                                                    <SelectContent>
-                                                        {categories?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        <FormField control={planForm.control} name="imageUrl" render={({ field }) => (
-                                            <FormItem><FormLabel>Image URL (Optional)</FormLabel><FormControl><Input placeholder="https://example.com/image.png" {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <FormField control={planForm.control} name="dailyReturn" render={({ field }) => (
-                                                <FormItem><FormLabel>Daily Return (%)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                        <div className="flex items-center gap-4">
+                             <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search plans..."
+                                    className="pl-10"
+                                    value={planSearchTerm}
+                                    onChange={(e) => setPlanSearchTerm(e.target.value)}
+                                />
+                            </div>
+                            <Dialog open={isPlanDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) closePlanDialog(); else setPlanDialogOpen(true); }}>
+                                <DialogTrigger asChild><Button disabled={!categories || categories.length === 0}>Add Plan</Button></DialogTrigger>
+                                <DialogContent className="sm:max-w-lg">
+                                    <DialogHeader>
+                                        <DialogTitle>{editingPlan ? "Edit" : "Add"} Plan</DialogTitle>
+                                    </DialogHeader>
+                                    <Form {...planForm}>
+                                        <form onSubmit={planForm.handleSubmit(handlePlanSubmit)} className="space-y-4">
+                                            <FormField control={planForm.control} name="name" render={({ field }) => (
+                                                <FormItem><FormLabel>Plan Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                                             )} />
-                                            <FormField control={planForm.control} name="period" render={({ field }) => (
-                                                <FormItem><FormLabel>Period (Days)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                            <FormField control={planForm.control} name="categoryId" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Category</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                        <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                            {categories?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
                                             )} />
-                                            <FormField control={planForm.control} name="minInvest" render={({ field }) => (
-                                                <FormItem><FormLabel>Min Investment</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                            <FormField control={planForm.control} name="imageUrl" render={({ field }) => (
+                                                <FormItem><FormLabel>Image URL (Optional)</FormLabel><FormControl><Input placeholder="https://example.com/image.png" {...field} /></FormControl><FormMessage /></FormItem>
                                             )} />
-                                        </div>
-                                        <DialogFooter>
-                                            <Button type="button" variant="ghost" onClick={closePlanDialog}>Cancel</Button>
-                                            <Button type="submit">Save Plan</Button>
-                                        </DialogFooter>
-                                    </form>
-                                </Form>
-                            </DialogContent>
-                        </Dialog>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <FormField control={planForm.control} name="dailyReturn" render={({ field }) => (
+                                                    <FormItem><FormLabel>Daily Return (%)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                                <FormField control={planForm.control} name="period" render={({ field }) => (
+                                                    <FormItem><FormLabel>Period (Days)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                                <FormField control={planForm.control} name="minInvest" render={({ field }) => (
+                                                    <FormItem><FormLabel>Min Investment</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                                )} />
+                                            </div>
+                                            <DialogFooter>
+                                                <Button type="button" variant="ghost" onClick={closePlanDialog}>Cancel</Button>
+                                                <Button type="submit">Save Plan</Button>
+                                            </DialogFooter>
+                                        </form>
+                                    </Form>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -310,7 +330,7 @@ export default function InvestmentsPage() {
                         <TableHeader><TableRow><TableHead>Plan Name</TableHead><TableHead>Category</TableHead><TableHead>Return</TableHead><TableHead>Period</TableHead><TableHead>Min Invest</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                         <TableBody>
                             {arePlansLoading ? <TableRow><TableCell colSpan={6}>Loading...</TableCell></TableRow> :
-                             plans?.map(plan => (
+                             filteredPlans?.map(plan => (
                                  <TableRow key={plan.id}>
                                      <TableCell className="font-medium">{plan.name}</TableCell>
                                      <TableCell>{getCategoryName(plan.categoryId)}</TableCell>
@@ -341,6 +361,11 @@ export default function InvestmentsPage() {
                                      </TableCell>
                                  </TableRow>
                              ))}
+                              {filteredPlans.length === 0 && !arePlansLoading && (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center h-24">No matching plans found.</TableCell>
+                                </TableRow>
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>

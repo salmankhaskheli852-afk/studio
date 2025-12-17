@@ -7,8 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useUser, useCollection, useMemoFirebase } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
 import { collection, query, runTransaction, getDocs, collectionGroup, doc } from "firebase/firestore";
-import { MoreHorizontal, ShieldCheck } from "lucide-react";
+import { MoreHorizontal, ShieldCheck, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,12 +44,22 @@ export function AdminClient() {
       pendingWithdrawals: 0,
   });
   const [isStatsLoading, setIsStatsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const usersQuery = useMemoFirebase(
     () => (firestore && adminUser ? collection(firestore, 'users') : null),
     [firestore, adminUser]
   );
   const { data: users, isLoading: areUsersLoading } = useCollection<AppUser>(usersQuery);
+
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+    return users.filter(user => 
+        user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.id.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [users, searchTerm]);
 
   const allTransactionsQuery = useMemoFirebase(
     () => (firestore ? query(collectionGroup(firestore, 'transactions')) : null),
@@ -141,8 +152,21 @@ export function AdminClient() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Users</CardTitle>
-          <CardDescription>Total users: {users?.length ?? 0}</CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>All Users</CardTitle>
+              <CardDescription>Total users: {users?.length ?? 0}</CardDescription>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search users..."
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -156,7 +180,7 @@ export function AdminClient() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users?.map((u) => (
+              {filteredUsers?.map((u) => (
                 <TableRow key={u.id}>
                   <TableCell className="font-medium">{u.displayName}</TableCell>
                   <TableCell>{u.email}</TableCell>
