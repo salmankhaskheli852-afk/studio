@@ -32,7 +32,7 @@ const getPlanIcon = (planName: string) => {
 
 export default function InvestPage() {
   const [selectedPlan, setSelectedPlan] = useState<InvestmentPlan | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isInsufficientBalanceDialogOpen, setInsufficientBalanceDialogOpen] = useState(false);
   const { user } = useUser();
   const firestore = useFirestore();
@@ -57,17 +57,20 @@ export default function InvestPage() {
   const { data: appSettings, isLoading: areSettingsLoading } = useDoc<AppSettings>(appSettingsDocRef);
 
   const handleInvestClick = (plan: InvestmentPlan) => {
-    if ((walletData?.balance ?? 0) < plan.minInvest) {
-      setInsufficientBalanceDialogOpen(true);
-      return;
-    }
     setSelectedPlan(plan);
-    setIsDialogOpen(true);
+    setIsConfirmDialogOpen(true);
   };
 
   const handleConfirmInvestment = async () => {
     if (!user || !selectedPlan || !firestore) {
       toast({ variant: "destructive", title: "Error", description: "Could not process investment. User or plan not found." });
+      return;
+    }
+    
+    // Check balance inside the confirmation logic
+    if ((walletData?.balance ?? 0) < selectedPlan.minInvest) {
+      setIsConfirmDialogOpen(false); // Close confirmation dialog
+      setInsufficientBalanceDialogOpen(true); // Open insufficient funds dialog
       return;
     }
 
@@ -113,7 +116,7 @@ export default function InvestPage() {
         description: "An error occurred while processing your investment.",
       });
     } finally {
-      setIsDialogOpen(false);
+      setIsConfirmDialogOpen(false);
     }
   };
 
@@ -202,7 +205,7 @@ export default function InvestPage() {
       )}
 
       {selectedPlan && (
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{selectedPlan.name}</DialogTitle>
@@ -227,7 +230,7 @@ export default function InvestPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="secondary" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+              <Button type="button" variant="secondary" onClick={() => setIsConfirmDialogOpen(false)}>Cancel</Button>
               <Button type="button" onClick={handleConfirmInvestment} disabled={isWalletLoading}>
                 {isWalletLoading ? 'Checking balance...' : 'Confirm Investment'}
               </Button>
@@ -255,3 +258,5 @@ export default function InvestPage() {
     </div>
   );
 }
+
+    
