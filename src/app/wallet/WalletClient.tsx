@@ -1,6 +1,8 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -32,7 +34,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowDownToDot, ArrowUpFromDot } from 'lucide-react';
+import { ArrowDownToDot, ArrowUpFromDot, LifeBuoy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useDoc, useMemoFirebase, useCollection } from '@/firebase';
 import { useFirestore } from '@/firebase/provider';
@@ -188,6 +190,10 @@ export function WalletClient() {
   const noDepositMethodsEnabled = !enabledDepositMethods || enabledDepositMethods.length === 0;
 
   const noWithdrawalMethodsEnabled = !appSettings?.withdrawalJazzCashEnabled && !appSettings?.withdrawalEasypaisaEnabled && !appSettings?.withdrawalBankEnabled;
+  
+  const whatsappLink = appSettings?.customerCareWhatsapp
+    ? `https://wa.me/${appSettings.customerCareWhatsapp.replace(/[^0-9]/g, '')}`
+    : null;
 
   return (
     <div className="space-y-6">
@@ -393,6 +399,25 @@ export function WalletClient() {
           </CardContent>
         </Card>
       </div>
+        
+      {whatsappLink && (
+        <div className="flex justify-center pt-4">
+            <Card className="w-full max-w-lg">
+                <CardHeader>
+                    <CardTitle>Customer Service</CardTitle>
+                    <CardDescription>Need help? Contact our support team directly.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button asChild className="w-full" variant="outline">
+                        <Link href={whatsappLink} target="_blank" rel="noopener noreferrer">
+                            <LifeBuoy className="mr-2 h-5 w-5" />
+                            Contact Service
+                        </Link>
+                    </Button>
+                </CardContent>
+            </Card>
+        </div>
+      )}
     </div>
   );
 }

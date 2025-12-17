@@ -56,7 +56,6 @@ const allNavItems = [
   { href: '/wallet', label: 'Wallet', icon: Wallet, roles: ['user'] },
   { href: '/my-bank', label: 'History', icon: Banknote, roles: ['user'] },
   { href: '/invite', label: 'Invite', icon: Users, roles: ['user'] },
-  { href: '/customer-service', label: 'Customer Service', icon: LifeBuoy, roles: ['user'], isExternal: true },
 
   // Admin items
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
@@ -127,12 +126,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const navItems = useMemo(() => {
     return allNavItems.filter(item => {
-        if (item.href === '/customer-service') {
-            return !!whatsappLink;
-        }
         return item.roles.includes(userRole);
     });
-  }, [userRole, whatsappLink]);
+  }, [userRole]);
 
 
   const NavContent = () => (
@@ -146,9 +142,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <span className="font-headline">InvestPro {isAdmin && 'Admin'}</span>
       </Link>
       {navItems.map((item) => {
-          const href = item.href === '/customer-service' ? whatsappLink ?? '#' : item.href;
-          const target = item.isExternal ? '_blank' : undefined;
-          const rel = item.isExternal ? 'noopener noreferrer' : undefined;
+          const href = item.href;
+          const target = undefined;
+          const rel = undefined;
 
           return (
             <Link
@@ -159,7 +155,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               onClick={() => setSheetOpen(false)}
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary',
-                pathname === item.href && !item.isExternal
+                pathname === item.href
                   ? 'bg-primary/10 text-primary'
                   : 'text-muted-foreground'
               )}
