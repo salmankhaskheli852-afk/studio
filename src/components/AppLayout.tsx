@@ -56,14 +56,15 @@ const allNavItems = [
   { href: '/wallet', label: 'Wallet', icon: Wallet, roles: ['user'] },
   { href: '/my-bank', label: 'History', icon: Banknote, roles: ['user'] },
   { href: '/invite', label: 'Invite', icon: Users, roles: ['user'] },
+  { href: '/customer-service', label: 'Customer Service', icon: LifeBuoy, roles: ['user'], isExternal: true },
+
   // Admin items
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
   { href: '/admin/deposits', label: 'Deposit Requests', icon: ArrowDownToDot, roles: ['admin'] },
   { href: '/admin/withdrawals', label: 'Withdrawal Requests', icon: ArrowUpFromDot, roles: ['admin'] },
   { href: '/admin/investments', label: 'Investments', icon: Package, roles: ['admin'] },
   { href: '/admin/settings', label: 'Settings', icon: Settings, roles: ['admin'] },
-   // Common items
-  { href: '/customer-service', label: 'Customer Service', icon: LifeBuoy, roles: ['user', 'admin'], isExternal: true },
+  { href: '/customer-service', label: 'Help', icon: LifeBuoy, roles: ['admin'], isExternal: true },
 ];
 
 const ADMIN_EMAIL = "salmankhaskheli885@gmail.com";
