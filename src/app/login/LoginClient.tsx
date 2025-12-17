@@ -43,7 +43,8 @@ export function LoginClient() {
   const getNextCustomId = async () => {
     if (!firestore) throw new Error("Firestore is not initialized.");
     
-    const counterDocRef = doc(firestore, 'internal/counters', 'users');
+    // Corrected path with an even number of segments: internal (collection) / users (document)
+    const counterDocRef = doc(firestore, 'internal', 'users');
 
     try {
         const newId = await runTransaction(firestore, async (transaction) => {
