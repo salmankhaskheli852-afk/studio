@@ -44,9 +44,9 @@ export function DashboardStats({
     teamIncome,
 }: DashboardStatsProps) {
     return (
-        <Card className="w-full overflow-hidden bg-gradient-to-br from-cyan-400 to-blue-500 shadow-lg">
+        <Card className="w-full overflow-hidden bg-gradient-to-br from-emerald-400 to-teal-600 shadow-lg">
             <CardContent className="p-0 text-white">
-                <div className="relative p-6 pb-16">
+                <div className="relative p-6 pb-20">
                     <div className="grid grid-cols-2 gap-4 text-center">
                         <div>
                             <p className="text-sm font-light text-white/90">Balance wallet</p>
