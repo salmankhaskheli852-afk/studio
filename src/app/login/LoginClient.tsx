@@ -18,7 +18,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
-import { Landmark } from 'lucide-react';
+import { Crown } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 
 const ADMIN_EMAIL = 'salmankhaskheli885@gmail.com';
@@ -116,10 +116,10 @@ export function LoginClient() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="flex justify-center items-center mb-4">
-            <Landmark className="h-8 w-8 text-primary" />
+            <Crown className="h-10 w-10 text-amber-500" />
           </div>
-          <CardTitle className="text-2xl font-headline">
-            Welcome to InvestPro
+          <CardTitle className="text-3xl font-bold font-headline">
+            InvestPro
           </CardTitle>
           <CardDescription>
             Sign in to access your wallet and investments.
