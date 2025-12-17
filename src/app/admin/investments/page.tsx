@@ -242,11 +242,25 @@ export default function InvestmentsPage() {
                                      <TableCell>{cat.description}</TableCell>
                                      <TableCell className="text-right">
                                          <Button variant="ghost" size="icon" onClick={() => handleEditCategory(cat)}><Edit className="h-4 w-4" /></Button>
-                                         <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" onClick={() => setItemToDelete({ id: cat.id, type: 'category' })}>
-                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                            </Button>
-                                         </AlertDialogTrigger>
+                                         <AlertDialog>
+                                             <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" onClick={() => setItemToDelete({ id: cat.id, type: 'category' })}>
+                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                </Button>
+                                             </AlertDialogTrigger>
+                                             <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        This action cannot be undone. This will permanently delete the category and it cannot be recovered.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteCategory(cat.id)}>Delete</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                         </AlertDialog>
                                      </TableCell>
                                  </TableRow>
                              ))}
@@ -324,11 +338,25 @@ export default function InvestmentsPage() {
                                      <TableCell>PKR {plan.minInvest.toLocaleString()}</TableCell>
                                      <TableCell className="text-right">
                                          <Button variant="ghost" size="icon" onClick={() => handleEditPlan(plan)}><Edit className="h-4 w-4" /></Button>
-                                         <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" onClick={() => setItemToDelete({ id: plan.id, type: 'plan' })}>
-                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                            </Button>
-                                         </AlertDialogTrigger>
+                                          <AlertDialog>
+                                             <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" onClick={() => setItemToDelete({ id: plan.id, type: 'plan' })}>
+                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                </Button>
+                                             </AlertDialogTrigger>
+                                             <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        This action cannot be undone. This will permanently delete the plan and it cannot be recovered.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeletePlan(plan.id)}>Delete</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                          </AlertDialog>
                                      </TableCell>
                                  </TableRow>
                              ))}
@@ -337,6 +365,8 @@ export default function InvestmentsPage() {
                 </CardContent>
             </Card>
 
+            {/* This AlertDialog is no longer needed here, but keeping the logic in case we want a single dialog for all deletions later. For now, it's better to have one per row. */}
+            {/* 
             <AlertDialog open={!!itemToDelete} onOpenChange={(isOpen) => !isOpen && setItemToDelete(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -351,6 +381,7 @@ export default function InvestmentsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            */}
         </div>
     );
 }
