@@ -62,6 +62,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const isAdmin = useMemo(() => user?.email === ADMIN_EMAIL, [user]);
 
   // Redirect logic
@@ -126,7 +132,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className={cn(
           "hidden border-r bg-card md:block",
-          { "sidebar-bubble-bg": isAdmin }
+          { "sidebar-bubble-bg": isClient && isAdmin }
       )}>
         <div className="flex h-full max-h-screen flex-col gap-2 p-4">
           <NavContent />
