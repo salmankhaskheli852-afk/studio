@@ -57,8 +57,21 @@ export default function InvestmentsPage() {
     const { data: plans, isLoading: arePlansLoading } = useCollection<InvestmentPlan>(plansQuery);
 
     // Forms
-    const categoryForm = useForm<z.infer<typeof categorySchema>>({ resolver: zodResolver(categorySchema) });
-    const planForm = useForm<z.infer<typeof planSchema>>({ resolver: zodResolver(planSchema) });
+    const categoryForm = useForm<z.infer<typeof categorySchema>>({ 
+        resolver: zodResolver(categorySchema),
+        defaultValues: { name: '', description: '' },
+    });
+    const planForm = useForm<z.infer<typeof planSchema>>({ 
+        resolver: zodResolver(planSchema),
+        defaultValues: {
+            name: '',
+            categoryId: '',
+            dailyReturn: 0,
+            period: 0,
+            minInvest: 0,
+            maxInvest: 0,
+        }
+    });
 
     const getCategoryName = (categoryId: string) => categories?.find(c => c.id === categoryId)?.name ?? 'N/A';
     
@@ -147,7 +160,14 @@ export default function InvestmentsPage() {
     const closePlanDialog = () => {
         setPlanDialogOpen(false);
         setEditingPlan(null);
-        planForm.reset();
+        planForm.reset({
+            name: '',
+            categoryId: '',
+            dailyReturn: 0,
+            period: 0,
+            minInvest: 0,
+            maxInvest: 0,
+        });
     }
 
 
@@ -184,7 +204,7 @@ export default function InvestmentsPage() {
                                         <FormField control={categoryForm.control} name="description" render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Description (Optional)</FormLabel>
-                                                <FormControl><Input {...field} /></FormControl>
+                                                <FormControl><Input {...field} value={field.value ?? ''} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
@@ -240,7 +260,7 @@ export default function InvestmentsPage() {
                                         <FormField control={planForm.control} name="categoryId" render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Category</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <Select onValueChange={field.onChange} value={field.value}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
                                                     <SelectContent>
                                                         {categories?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
