@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useUser, useCollection, useMemoFirebase } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
-import { collection, query, where, Timestamp, orderBy, doc, getDoc, runTransaction } from "firebase/firestore";
+import { collection, query, where, Timestamp, orderBy, doc, getDoc, runTransaction, getDocs, collectionGroup } from "firebase/firestore";
 import { MoreHorizontal, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import type { Transaction } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
+import { AdminStats } from '@/components/AdminStats';
 
 type AppUser = {
   id: string;
@@ -47,12 +48,67 @@ export function AdminClient() {
   const [selectedUser, setSelectedUser] = useState<UserWithTransactions | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
+  
+  const [globalStats, setGlobalStats] = useState({
+      totalInvestments: 0,
+      totalDeposits: 0,
+      totalEarnings: 0,
+      totalWithdrawals: 0,
+      pendingDeposits: 0,
+      pendingWithdrawals: 0,
+  });
+  const [isStatsLoading, setIsStatsLoading] = useState(true);
 
   const usersQuery = useMemoFirebase(
     () => (firestore && adminUser ? collection(firestore, 'users') : null),
     [firestore, adminUser]
   );
   const { data: users, isLoading: areUsersLoading } = useCollection<AppUser>(usersQuery);
+
+  const allTransactionsQuery = useMemoFirebase(
+    () => (firestore ? query(collectionGroup(firestore, 'transactions')) : null),
+    [firestore]
+  );
+
+  useEffect(() => {
+    async function fetchGlobalStats() {
+      if (!allTransactionsQuery) return;
+      setIsStatsLoading(true);
+      
+      const querySnapshot = await getDocs(allTransactionsQuery);
+      
+      let investments = 0, deposits = 0, earnings = 0, withdrawals = 0, pDeposits = 0, pWithdrawals = 0;
+
+      querySnapshot.forEach(doc => {
+          const t = doc.data() as Transaction;
+          if (t.type === 'Investment' && t.status === 'Completed') {
+              investments += Math.abs(t.amount); // Assuming investment amount is stored
+              earnings += t.amount; // Placeholder for actual earnings logic
+          }
+          if (t.type === 'Deposit') {
+              if(t.status === 'Completed') deposits += t.amount;
+              if(t.status === 'Pending') pDeposits += 1;
+          }
+          if (t.type === 'Withdrawal') {
+              if(t.status === 'Completed') withdrawals += Math.abs(t.amount);
+              if(t.status === 'Pending') pWithdrawals += 1;
+          }
+      });
+      
+      setGlobalStats({
+          totalInvestments: investments,
+          totalDeposits: deposits,
+          totalEarnings: earnings,
+          totalWithdrawals: withdrawals,
+          pendingDeposits: pDeposits,
+          pendingWithdrawals: pWithdrawals,
+      });
+
+      setIsStatsLoading(false);
+    }
+    fetchGlobalStats();
+  }, [allTransactionsQuery]);
+
 
   const sevenDaysAgo = useMemo(() => {
     const date = new Date();
@@ -96,7 +152,6 @@ export function AdminClient() {
             title: "Success",
             description: `User role updated successfully.`
         });
-        // Note: Manual refresh might be needed or optimistic UI update
     } catch(e) {
         console.error("Failed to update user role:", e);
         toast({
@@ -107,7 +162,6 @@ export function AdminClient() {
     }
   }
   
-  // Calculate totals when transactions data is available
   useMemo(() => {
     if (transactions && selectedUser) {
         let totalEarned = 0;
@@ -134,9 +188,19 @@ export function AdminClient() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight font-headline">User Dashboard</h1>
-        <p className="text-muted-foreground">Manage all users and their data.</p>
+        <h1 className="text-3xl font-bold tracking-tight font-headline">Admin Dashboard</h1>
+        <p className="text-muted-foreground">Manage all users and view site-wide statistics.</p>
       </header>
+
+      <AdminStats 
+        isLoading={isStatsLoading}
+        totalInvestments={globalStats.totalInvestments}
+        totalDeposits={globalStats.totalDeposits}
+        totalEarnings={globalStats.totalEarnings}
+        totalWithdrawals={globalStats.totalWithdrawals}
+        pendingDeposits={globalStats.pendingDeposits}
+        pendingWithdrawals={globalStats.pendingWithdrawals}
+      />
 
       <Card>
         <CardHeader>
