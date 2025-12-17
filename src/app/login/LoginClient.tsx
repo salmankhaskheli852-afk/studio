@@ -42,18 +42,34 @@ export function LoginClient() {
 
   const getNextCustomId = async () => {
     if (!firestore) return STARTING_USER_ID.toString();
-
+    
+    // Firestore's orderBy on a string field might not sort numerically as expected (e.g., "10" comes before "2").
+    // Fetch all users, convert customId to a number, and find the max.
+    // This is less efficient for very large user bases but reliable for your ID format.
     const usersRef = collection(firestore, 'users');
-    const q = query(usersRef, orderBy('customId', 'desc'), limit(1));
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await getDocs(usersRef);
 
     if (querySnapshot.empty) {
-      return STARTING_USER_ID.toString();
-    } else {
-      const lastUser = querySnapshot.docs[0].data();
-      const lastId = parseInt(lastUser.customId, 10);
-      return (lastId + 1).toString();
+      return STARTING_USER_ID;
     }
+
+    let maxId = 0;
+    querySnapshot.forEach((doc) => {
+      const userData = doc.data();
+      if(userData.customId) {
+        const numericId = parseInt(userData.customId, 10);
+        if (numericId > maxId) {
+          maxId = numericId;
+        }
+      }
+    });
+    
+    // If no users have a valid customId yet, start from the beginning.
+    if(maxId < STARTING_USER_ID) {
+        return STARTING_USER_ID;
+    }
+
+    return maxId + 1;
   };
 
   const createUserDocuments = async (firebaseUser: FirebaseUser) => {
@@ -77,7 +93,7 @@ export function LoginClient() {
 
       await setDoc(userDocRef, {
         id: firebaseUser.uid,
-        customId: nextId,
+        customId: nextId.toString(),
         googleId: firebaseUser.providerData
           .find((p) => p.providerId === 'google.com')
           ?.uid.toString(),
@@ -159,5 +175,3 @@ export function LoginClient() {
     </div>
   );
 }
-
-    
