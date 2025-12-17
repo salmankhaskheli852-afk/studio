@@ -1,16 +1,34 @@
 'use client';
 
-import { useUser } from '@/firebase';
+import { useUser, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore } from '@/firebase/provider';
+import { doc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
+type AppUser = {
+  id: string;
+  customId: string;
+  displayName: string;
+  email: string;
+};
+
 export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
 
-  if (isUserLoading) {
+  const userDocRef = useMemoFirebase(
+    () => (user ? doc(firestore, 'users', user.uid) : null),
+    [firestore, user]
+  );
+  const { data: userData, isLoading: isUserDocLoading } = useDoc<AppUser>(userDocRef);
+
+  const isLoading = isUserLoading || isUserDocLoading;
+
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"></div>
@@ -18,7 +36,7 @@ export default function ProfilePage() {
     );
   }
 
-  if (!user) {
+  if (!user || !userData) {
     return (
         <div className="flex flex-col items-center justify-center h-full text-center">
             <h2 className="text-2xl font-bold">Please log in</h2>
@@ -54,7 +72,7 @@ export default function ProfilePage() {
             </div>
              <div className="space-y-2">
                 <Label htmlFor="uid">User ID</Label>
-                <Input id="uid" defaultValue={user.uid} readOnly />
+                <Input id="uid" defaultValue={userData.customId} readOnly />
             </div>
             <Button className="w-full">Update Profile</Button>
         </CardContent>
@@ -62,3 +80,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    

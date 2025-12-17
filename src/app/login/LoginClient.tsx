@@ -16,12 +16,13 @@ import {
   signInWithPopup,
   User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { Landmark } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 
 const ADMIN_EMAIL = 'salmankhaskheli885@gmail.com';
+const STARTING_USER_ID = 100100;
 
 export function LoginClient() {
   const auth = useAuth();
@@ -38,6 +39,22 @@ export function LoginClient() {
       }
     }
   }, [user, isUserLoading, router]);
+
+  const getNextCustomId = async () => {
+    if (!firestore) return STARTING_USER_ID.toString();
+
+    const usersRef = collection(firestore, 'users');
+    const q = query(usersRef, orderBy('customId', 'desc'), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      return STARTING_USER_ID.toString();
+    } else {
+      const lastUser = querySnapshot.docs[0].data();
+      const lastId = parseInt(lastUser.customId, 10);
+      return (lastId + 1).toString();
+    }
+  };
 
   const createUserDocuments = async (firebaseUser: FirebaseUser) => {
     if (!firestore) return;
@@ -56,8 +73,11 @@ export function LoginClient() {
         Math.random().toString(36).substring(2, 8).toUpperCase() +
         Math.random().toString(36).substring(2, 8).toUpperCase();
 
+      const nextId = await getNextCustomId();
+
       await setDoc(userDocRef, {
         id: firebaseUser.uid,
+        customId: nextId,
         googleId: firebaseUser.providerData
           .find((p) => p.providerId === 'google.com')
           ?.uid.toString(),
@@ -139,3 +159,5 @@ export function LoginClient() {
     </div>
   );
 }
+
+    

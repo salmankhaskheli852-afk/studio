@@ -9,7 +9,11 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the user."
+          "description": "Unique identifier for the user (Firebase Auth UID)."
+        },
+        "customId": {
+            "type": "string",
+            "description": "A custom, sequential, human-readable ID starting from 100100."
         },
         "googleId": {
           "type": "string",
@@ -64,6 +68,7 @@
       },
       "required": [
         "id",
+        "customId",
         "googleId",
         "referralCode"
       ]
@@ -401,3 +406,6 @@
   }
 }
 
+
+
+    

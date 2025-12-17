@@ -22,6 +22,7 @@ import { AdminStats } from '@/components/AdminStats';
 
 type AppUser = {
   id: string;
+  customId: string;
   displayName: string;
   email: string;
   isAdmin?: boolean;
@@ -57,7 +58,7 @@ export function AdminClient() {
     return users.filter(user => 
         user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.id.toLowerCase().includes(searchTerm.toLowerCase())
+        user.customId.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [users, searchTerm]);
 
@@ -160,7 +161,7 @@ export function AdminClient() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search users..."
+                placeholder="Search by ID, name, email..."
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -172,9 +173,9 @@ export function AdminClient() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>User ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>UID</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -182,9 +183,9 @@ export function AdminClient() {
             <TableBody>
               {filteredUsers?.map((u) => (
                 <TableRow key={u.id}>
+                  <TableCell className="font-mono">{u.customId}</TableCell>
                   <TableCell className="font-medium">{u.displayName}</TableCell>
                   <TableCell>{u.email}</TableCell>
-                  <TableCell className="text-muted-foreground font-mono text-xs">{u.id}</TableCell>
                    <TableCell>
                     {u.isAdmin ? <span className="flex items-center gap-2 text-primary font-semibold"><ShieldCheck className="h-4 w-4"/> Admin</span> : "User"}
                   </TableCell>
@@ -214,3 +215,5 @@ export function AdminClient() {
     </div>
   );
 }
+
+    

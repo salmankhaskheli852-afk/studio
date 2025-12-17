@@ -14,6 +14,7 @@ import { ShieldCheck } from 'lucide-react';
 
 type AppUser = {
   id: string;
+  customId: string;
   displayName: string;
   email: string;
   isAdmin?: boolean;
@@ -105,7 +106,7 @@ export default function UserDetailsPage() {
                             {userData.isAdmin && <ShieldCheck className="h-6 w-6 text-primary" />}
                         </CardTitle>
                         <CardDescription>{userData.email}</CardDescription>
-                         <p className="text-xs text-muted-foreground font-mono pt-1">{userData.id}</p>
+                         <p className="text-sm text-muted-foreground font-mono pt-1">ID: {userData.customId}</p>
                     </div>
                 </CardHeader>
             </Card>
@@ -183,3 +184,5 @@ export default function UserDetailsPage() {
         </div>
     );
 }
+
+    
