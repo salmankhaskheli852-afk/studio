@@ -42,9 +42,18 @@ export default function SettingsPage() {
     const { data: appSettings, isLoading: areSettingsLoading } = useDoc<AppSettings>(appSettingsDocRef);
     
     // Forms
-    const jazzcashForm = useForm<WalletFormData>({ resolver: zodResolver(walletSchema) });
-    const easypaisaForm = useForm<WalletFormData>({ resolver: zodResolver(walletSchema) });
-    const settingsForm = useForm<SettingsFormData>({ resolver: zodResolver(settingsSchema) });
+    const jazzcashForm = useForm<WalletFormData>({ 
+        resolver: zodResolver(walletSchema),
+        defaultValues: { accountHolderName: '', accountNumber: '' }
+    });
+    const easypaisaForm = useForm<WalletFormData>({ 
+        resolver: zodResolver(walletSchema),
+        defaultValues: { accountHolderName: '', accountNumber: '' }
+    });
+    const settingsForm = useForm<SettingsFormData>({ 
+        resolver: zodResolver(settingsSchema),
+        defaultValues: { minDeposit: 0, maxDeposit: 0, minWithdrawal: 0, maxWithdrawal: 0 }
+    });
 
     useEffect(() => {
         if(adminWallets) {
@@ -62,6 +71,15 @@ export default function SettingsPage() {
     const handleWalletsSubmit = async () => {
         if (!firestore) return;
         const batch = writeBatch(firestore);
+
+        // Manually trigger validation before submitting
+        const isJazzcashValid = await jazzcashForm.trigger();
+        const isEasypaisaValid = await easypaisaForm.trigger();
+
+        if (!isJazzcashValid || !isEasypaisaValid) {
+             toast({ variant: 'destructive', title: "Validation Error", description: "Please fill out all wallet fields correctly." });
+             return;
+        }
 
         const jazzcashData = jazzcashForm.getValues();
         const jazzcashDocRef = doc(firestore, 'admin_wallet_details', 'jazzcash');
