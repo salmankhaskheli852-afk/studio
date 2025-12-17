@@ -62,8 +62,6 @@ const allNavItems = [
   { href: '/admin/withdrawals', label: 'Withdrawal Requests', icon: ArrowUpFromDot, roles: ['admin'] },
   { href: '/admin/investments', label: 'Investments', icon: Package, roles: ['admin'] },
   { href: '/admin/settings', label: 'Settings', icon: Settings, roles: ['admin'] },
-  // Common items (but handled separately)
-  // { href: '#', label: 'Customer Service', icon: LifeBuoy, roles: ['user', 'admin'] },
 ];
 
 const ADMIN_EMAIL = "salmankhaskheli885@gmail.com";
@@ -270,5 +268,3 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-
-    
