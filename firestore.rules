@@ -93,6 +93,19 @@ service cloud.firestore {
        allow get: if isAdmin();
        allow list: if isAdmin();
      }
+    
+    /**
+     * @description Manages investment plan categories.
+     * @path /investment_categories/{categoryId}
+     * @principle Public Read with Admin-Only Writes.
+     */
+    match /investment_categories/{categoryId} {
+        allow get: if true;
+        allow list: if true;
+        allow create: if isAdmin();
+        allow update: if isAdmin();
+        allow delete: if isAdmin();
+    }
 
     /**
      * @description Manages investment plans, which are public to all users for reading.

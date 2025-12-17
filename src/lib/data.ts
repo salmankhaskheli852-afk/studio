@@ -1,38 +1,18 @@
 export type InvestmentPlan = {
-  id: number;
+  id: string; // Changed to string for Firestore
   name: string;
+  categoryId: string; // Added categoryId
   dailyReturn: number;
   period: number;
   minInvest: number;
   maxInvest: number;
 };
 
-export const investmentPlans: InvestmentPlan[] = [
-  {
-    id: 1,
-    name: "Starter Plan",
-    dailyReturn: 2.5,
-    period: 30,
-    minInvest: 1000,
-    maxInvest: 10000,
-  },
-  {
-    id: 2,
-    name: "Pro Plan",
-    dailyReturn: 3.5,
-    period: 60,
-    minInvest: 10001,
-    maxInvest: 50000,
-  },
-  {
-    id: 3,
-    name: "Expert Plan",
-    dailyReturn: 5.0,
-    period: 90,
-    minInvest: 50001,
-    maxInvest: 200000,
-  },
-];
+export type InvestmentCategory = {
+    id: string;
+    name: string;
+    description: string;
+}
 
 export type Transaction = {
   id: string;
