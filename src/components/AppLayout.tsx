@@ -18,6 +18,7 @@ import {
   Wallet,
   Settings,
   Package,
+  RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -99,6 +100,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handleRefresh = () => {
+    window.location.reload();
+  };
+
   const navItems = useMemo(() => {
     return allNavItems.filter(item => item.adminOnly === isAdmin);
   }, [isAdmin]);
@@ -145,8 +150,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className={cn(
-          "hidden border-r bg-card md:block",
-          isClient && isAdmin && "sidebar-bubble-bg"
+          "hidden border-r md:block",
+           isClient && isAdmin ? "sidebar-bubble-bg bg-card" : "bg-card"
       )}>
         <div className="flex h-full max-h-screen flex-col gap-2 p-4">
           <NavContent />
@@ -171,12 +176,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <NavContent />
             </SheetContent>
           </Sheet>
-          <div className="flex w-full items-center justify-between">
-            <div className="flex items-center gap-2 text-lg font-semibold md:hidden">
-              <Landmark className="h-6 w-6 text-primary" />
-              <span className="font-headline">InvestPro</span>
-            </div>
-            <div className="w-full flex-1" />
+          <div className="flex w-full items-center justify-end gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRefresh}
+              aria-label="Refresh page"
+            >
+              <RefreshCw className="h-5 w-5 text-muted-foreground" />
+            </Button>
             {isUserLoading ? (
               <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
             ) : user ? (
