@@ -20,7 +20,7 @@ import { Trash2, Edit } from 'lucide-react';
 
 // Data types
 type InvestmentCategory = { id: string; name: string; description: string; };
-type InvestmentPlan = { id: string; name: string; categoryId: string; dailyReturn: number; period: number; minInvest: number; maxInvest: number; };
+type InvestmentPlan = { id: string; name: string; categoryId: string; dailyReturn: number; period: number; minInvest: number; };
 
 // Schemas
 const categorySchema = z.object({
@@ -34,10 +34,6 @@ const planSchema = z.object({
     dailyReturn: z.coerce.number().positive("Must be positive."),
     period: z.coerce.number().int().positive("Must be a positive number of days."),
     minInvest: z.coerce.number().min(0, "Cannot be negative."),
-    maxInvest: z.coerce.number().positive("Must be positive."),
-}).refine(data => data.maxInvest > data.minInvest, {
-    message: "Max investment must be greater than min investment.",
-    path: ["maxInvest"],
 });
 
 export default function InvestmentsPage() {
@@ -71,7 +67,6 @@ export default function InvestmentsPage() {
             dailyReturn: 0,
             period: 0,
             minInvest: 0,
-            maxInvest: 0,
         }
     });
 
@@ -170,7 +165,6 @@ export default function InvestmentsPage() {
             dailyReturn: 0,
             period: 0,
             minInvest: 0,
-            maxInvest: 0,
         });
     }
 
@@ -244,7 +238,7 @@ export default function InvestmentsPage() {
                                          <Button variant="ghost" size="icon" onClick={() => handleEditCategory(cat)}><Edit className="h-4 w-4" /></Button>
                                          <AlertDialog>
                                              <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" onClick={() => setItemToDelete({ id: cat.id, type: 'category' })}>
+                                                <Button variant="ghost" size="icon">
                                                     <Trash2 className="h-4 w-4 text-destructive" />
                                                 </Button>
                                              </AlertDialogTrigger>
@@ -256,7 +250,7 @@ export default function InvestmentsPage() {
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
-                                                    <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
                                                     <AlertDialogAction onClick={() => handleDeleteCategory(cat.id)}>Delete</AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
@@ -310,9 +304,6 @@ export default function InvestmentsPage() {
                                             <FormField control={planForm.control} name="minInvest" render={({ field }) => (
                                                 <FormItem><FormLabel>Min Investment</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                                             )} />
-                                            <FormField control={planForm.control} name="maxInvest" render={({ field }) => (
-                                                <FormItem><FormLabel>Max Investment</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                                            )} />
                                         </div>
                                         <DialogFooter>
                                             <Button type="button" variant="ghost" onClick={closePlanDialog}>Cancel</Button>
@@ -340,7 +331,7 @@ export default function InvestmentsPage() {
                                          <Button variant="ghost" size="icon" onClick={() => handleEditPlan(plan)}><Edit className="h-4 w-4" /></Button>
                                           <AlertDialog>
                                              <AlertDialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" onClick={() => setItemToDelete({ id: plan.id, type: 'plan' })}>
+                                                <Button variant="ghost" size="icon">
                                                     <Trash2 className="h-4 w-4 text-destructive" />
                                                 </Button>
                                              </AlertDialogTrigger>
@@ -352,7 +343,7 @@ export default function InvestmentsPage() {
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
-                                                    <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
                                                     <AlertDialogAction onClick={() => handleDeletePlan(plan.id)}>Delete</AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>

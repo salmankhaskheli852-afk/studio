@@ -149,7 +149,6 @@
       ]
     },
     "InvestmentPlan": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "InvestmentPlan",
       "type": "object",
       "description": "Represents an investment plan available in the InvestPro Wallet application.",
@@ -159,33 +158,28 @@
           "description": "Unique identifier for the investment plan."
         },
         "name": {
-          "type": "string",
-          "description": "The name of the investment plan."
-        },
-        "description": {
-          "type": "string",
-          "description": "A description of the investment plan."
+          "type": "string"
         },
         "categoryId": {
-            "type": "string",
-            "description": "The ID of the category this plan belongs to."
+          "type": "string"
         },
-        "minimumInvestment": {
-          "type": "number",
-          "description": "The minimum amount required to invest in this plan."
+        "dailyReturn": {
+          "type": "number"
         },
-        "returnPercentage": {
-          "type": "number",
-          "description": "The percentage of return for this investment plan."
+        "period": {
+          "type": "number"
+        },
+        "minInvest": {
+          "type": "number"
         }
       },
       "required": [
         "id",
         "name",
-        "description",
         "categoryId",
-        "minimumInvestment",
-        "returnPercentage"
+        "dailyReturn",
+        "period",
+        "minInvest"
       ]
     },
     "InvestmentCategory": {

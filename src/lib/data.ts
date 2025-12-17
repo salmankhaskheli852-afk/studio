@@ -5,7 +5,6 @@ export type InvestmentPlan = {
   dailyReturn: number;
   period: number;
   minInvest: number;
-  maxInvest: number;
 };
 
 export type InvestmentCategory = {

@@ -12,7 +12,7 @@ import { useFirestore } from "@/firebase/provider";
 import { useToast } from "@/hooks/use-toast";
 
 type InvestmentCategory = { id: string; name: string; };
-type InvestmentPlan = { id: string; name: string; categoryId: string; dailyReturn: number; period: number; minInvest: number; maxInvest: number; };
+type InvestmentPlan = { id: string; name: string; categoryId: string; dailyReturn: number; period: number; minInvest: number; };
 
 const planIcons = {
   default: <TrendingUp className="h-8 w-8 text-primary" />,
