@@ -44,10 +44,10 @@ service cloud.firestore {
      * @principle Enforces self-management for users and full control for Pro Admins. User listing is restricted.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId) || isProAdmin();
-      allow list: if isProAdmin();
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isOwner(userId) || isProAdmin();
+      allow update: if isOwner(userId) || isAdmin();
       allow delete: if isProAdmin();
     }
 
@@ -72,7 +72,7 @@ service cloud.firestore {
     match /users/{userId}/wallet/{walletId}/transactions/{transactionId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId) && request.resource.data.walletId == walletId;
+      allow create: if isOwner(userId) && request.resource.data.walletId == userId;
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isOwner(userId);
     }
