@@ -151,5 +151,15 @@ service cloud.firestore {
         allow update: if isAdmin();
         allow delete: if isAdmin();
     }
+
+    /**
+     * @description Manages internal counter documents used for generating sequential IDs.
+     * @path /internal/counters/{counterId}
+     * @allow Read and write access is restricted to authenticated users within a transaction.
+     * @principle Secures critical internal state used for ID generation.
+     */
+    match /internal/counters/{counterId} {
+      allow read, write: if isSignedIn();
+    }
   }
 }

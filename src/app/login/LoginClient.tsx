@@ -16,7 +16,7 @@ import {
   signInWithPopup,
   User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp, runTransaction, DocumentReference } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { Landmark } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
@@ -41,36 +41,31 @@ export function LoginClient() {
   }, [user, isUserLoading, router]);
 
   const getNextCustomId = async () => {
-    if (!firestore) return STARTING_USER_ID.toString();
+    if (!firestore) throw new Error("Firestore is not initialized.");
     
-    // Firestore's orderBy on a string field might not sort numerically as expected (e.g., "10" comes before "2").
-    // Fetch all users, convert customId to a number, and find the max.
-    // This is less efficient for very large user bases but reliable for your ID format.
-    const usersRef = collection(firestore, 'users');
-    const querySnapshot = await getDocs(usersRef);
+    const counterDocRef = doc(firestore, 'internal/counters', 'users');
 
-    if (querySnapshot.empty) {
-      return STARTING_USER_ID;
+    try {
+        const newId = await runTransaction(firestore, async (transaction) => {
+            const counterDoc = await transaction.get(counterDocRef);
+
+            if (!counterDoc.exists()) {
+                // If the counter document doesn't exist, initialize it.
+                transaction.set(counterDocRef, { lastId: STARTING_USER_ID });
+                return STARTING_USER_ID;
+            }
+
+            const newLastId = counterDoc.data().lastId + 1;
+            transaction.update(counterDocRef, { lastId: newLastId });
+            return newLastId;
+        });
+        return newId;
+    } catch (error) {
+        console.error("Transaction failed: ", error);
+        throw error;
     }
-
-    let maxId = 0;
-    querySnapshot.forEach((doc) => {
-      const userData = doc.data();
-      if(userData.customId) {
-        const numericId = parseInt(userData.customId, 10);
-        if (numericId > maxId) {
-          maxId = numericId;
-        }
-      }
-    });
-    
-    // If no users have a valid customId yet, start from the beginning.
-    if(maxId < STARTING_USER_ID) {
-        return STARTING_USER_ID;
-    }
-
-    return maxId + 1;
   };
+
 
   const createUserDocuments = async (firebaseUser: FirebaseUser) => {
     if (!firestore) return;
@@ -88,7 +83,7 @@ export function LoginClient() {
       const referralCode =
         Math.random().toString(36).substring(2, 8).toUpperCase() +
         Math.random().toString(36).substring(2, 8).toUpperCase();
-
+      
       const nextId = await getNextCustomId();
 
       await setDoc(userDocRef, {
