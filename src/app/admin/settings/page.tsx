@@ -268,7 +268,7 @@ export default function SettingsPage() {
                             <div className="grid md:grid-cols-2 gap-6">
                                 {/* JazzCash Form */}
                                 <Form {...jazzcashForm}>
-                                    <form className="space-y-4 p-4 border rounded-lg">
+                                    <div className="space-y-4 p-4 border rounded-lg">
                                         <h3 className="font-semibold text-lg">JazzCash Account</h3>
                                         <FormField control={jazzcashForm.control} name="accountHolderName" render={({ field }) => (
                                             <FormItem>
@@ -284,12 +284,12 @@ export default function SettingsPage() {
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
-                                    </form>
+                                    </div>
                                 </Form>
 
                                 {/* Easypaisa Form */}
                                 <Form {...easypaisaForm}>
-                                     <form className="space-y-4 p-4 border rounded-lg">
+                                     <div className="space-y-4 p-4 border rounded-lg">
                                         <h3 className="font-semibold text-lg">Easypaisa Account</h3>
                                         <FormField control={easypaisaForm.control} name="accountHolderName" render={({ field }) => (
                                             <FormItem>
@@ -305,10 +305,10 @@ export default function SettingsPage() {
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
-                                    </form>
+                                    </div>
                                 </Form>
                             </div>
-                             <Button onClick={handleWalletsSubmit} disabled={jazzcashForm.formState.isSubmitting || easypaisaForm.formState.isSubmitting}>
+                             <Button type="button" onClick={handleWalletsSubmit} disabled={jazzcashForm.formState.isSubmitting || easypaisaForm.formState.isSubmitting}>
                                 Save Wallet Details
                             </Button>
                         </CardContent>
