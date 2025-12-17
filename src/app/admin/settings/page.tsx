@@ -16,12 +16,6 @@ import { doc, writeBatch, collection } from "firebase/firestore";
 import type { AdminWallet, AppSettings } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 
-// Schemas
-const walletSchema = z.object({
-    accountHolderName: z.string().min(3, "Required"),
-    accountNumber: z.string().min(11, "Required"),
-});
-
 const settingsSchema = z.object({
     minDeposit: z.coerce.number().positive(),
     maxDeposit: z.coerce.number().positive(),
@@ -29,9 +23,17 @@ const settingsSchema = z.object({
     maxWithdrawal: z.coerce.number().positive(),
     maintenanceMode: z.boolean().default(false),
     maintenanceMessage: z.string().optional(),
-    depositsEnabled: z.boolean().default(true),
-    withdrawalsEnabled: z.boolean().default(true),
     investmentsEnabled: z.boolean().default(true),
+    depositJazzCashEnabled: z.boolean().default(true),
+    depositEasypaisaEnabled: z.boolean().default(true),
+    withdrawalJazzCashEnabled: z.boolean().default(true),
+    withdrawalEasypaisaEnabled: z.boolean().default(true),
+    withdrawalBankEnabled: z.boolean().default(true),
+});
+
+const walletSchema = z.object({
+    accountHolderName: z.string().min(3, "Required"),
+    accountNumber: z.string().min(11, "Required"),
 });
 
 type WalletFormData = z.infer<typeof walletSchema>;
@@ -41,14 +43,12 @@ export default function SettingsPage() {
     const firestore = useFirestore();
     const { toast } = useToast();
 
-    // Data hooks
     const adminWalletsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'admin_wallet_details') : null, [firestore]);
     const { data: adminWallets, isLoading: areWalletsLoading } = useCollection<AdminWallet>(adminWalletsQuery);
 
     const appSettingsDocRef = useMemoFirebase(() => firestore ? doc(firestore, 'app_settings', 'global') : null, [firestore]);
     const { data: appSettings, isLoading: areSettingsLoading } = useDoc<AppSettings>(appSettingsDocRef);
     
-    // Forms
     const jazzcashForm = useForm<WalletFormData>({ 
         resolver: zodResolver(walletSchema),
         defaultValues: { accountHolderName: '', accountNumber: '' }
@@ -66,9 +66,12 @@ export default function SettingsPage() {
             maxWithdrawal: 0,
             maintenanceMode: false,
             maintenanceMessage: "The application is currently under maintenance. We are working to improve your experience. Your funds are safe. Please check back later.",
-            depositsEnabled: true,
-            withdrawalsEnabled: true,
             investmentsEnabled: true,
+            depositJazzCashEnabled: true,
+            depositEasypaisaEnabled: true,
+            withdrawalJazzCashEnabled: true,
+            withdrawalEasypaisaEnabled: true,
+            withdrawalBankEnabled: true,
         }
     });
 
@@ -89,7 +92,6 @@ export default function SettingsPage() {
         if (!firestore) return;
         const batch = writeBatch(firestore);
 
-        // Manually trigger validation before submitting
         const isJazzcashValid = await jazzcashForm.trigger();
         const isEasypaisaValid = await easypaisaForm.trigger();
 
@@ -145,7 +147,6 @@ export default function SettingsPage() {
 
             <Form {...settingsForm}>
                 <form onSubmit={settingsForm.handleSubmit(handleSettingsSubmit)} className="space-y-8">
-                    {/* Feature Controls */}
                     <Card>
                         <CardHeader>
                             <CardTitle>Feature Controls</CardTitle>
@@ -154,61 +155,56 @@ export default function SettingsPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                             <FormField
-                                control={settingsForm.control}
-                                name="depositsEnabled"
-                                render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                        <div className="space-y-0.5">
-                                            <FormLabel className="text-base">Enable Deposits</FormLabel>
-                                            <FormDescription>
-                                                Allow users to make new deposits.
-                                            </FormDescription>
-                                        </div>
-                                        <FormControl>
-                                            <Switch checked={field.value} onCheckedChange={field.onChange} />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-                             <FormField
-                                control={settingsForm.control}
-                                name="withdrawalsEnabled"
-                                render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                        <div className="space-y-0.5">
-                                            <FormLabel className="text-base">Enable Withdrawals</FormLabel>
-                                            <FormDescription>
-                                                Allow users to request withdrawals.
-                                            </FormDescription>
-                                        </div>
-                                        <FormControl>
-                                            <Switch checked={field.value} onCheckedChange={field.onChange} />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-                             <FormField
-                                control={settingsForm.control}
-                                name="investmentsEnabled"
-                                render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                        <div className="space-y-0.5">
-                                            <FormLabel className="text-base">Enable Investments</FormLabel>
-                                            <FormDescription>
-                                                Allow users to purchase new investment plans.
-                                            </FormDescription>
-                                        </div>
-                                        <FormControl>
-                                            <Switch checked={field.value} onCheckedChange={field.onChange} />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
+                            <FormField control={settingsForm.control} name="investmentsEnabled" render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                        <FormLabel className="text-base">Enable Investments</FormLabel>
+                                        <FormDescription>Allow users to purchase new investment plans.</FormDescription>
+                                    </div>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="rounded-lg border p-4 space-y-4">
+                                     <h3 className="font-semibold">Deposit Methods</h3>
+                                     <FormField control={settingsForm.control} name="depositJazzCashEnabled" render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center justify-between">
+                                            <FormLabel>JazzCash</FormLabel>
+                                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                        </FormItem>
+                                     )}/>
+                                      <FormField control={settingsForm.control} name="depositEasypaisaEnabled" render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center justify-between">
+                                            <FormLabel>Easypaisa</FormLabel>
+                                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                        </FormItem>
+                                     )}/>
+                                </div>
+                                <div className="rounded-lg border p-4 space-y-4">
+                                     <h3 className="font-semibold">Withdrawal Methods</h3>
+                                      <FormField control={settingsForm.control} name="withdrawalJazzCashEnabled" render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center justify-between">
+                                            <FormLabel>JazzCash</FormLabel>
+                                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                        </FormItem>
+                                     )}/>
+                                      <FormField control={settingsForm.control} name="withdrawalEasypaisaEnabled" render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center justify-between">
+                                            <FormLabel>Easypaisa</FormLabel>
+                                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                        </FormItem>
+                                     )}/>
+                                      <FormField control={settingsForm.control} name="withdrawalBankEnabled" render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center justify-between">
+                                            <FormLabel>Bank Transfer</FormLabel>
+                                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                        </FormItem>
+                                     )}/>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
                     
-                    {/* Maintenance Mode */}
                     <Card>
                         <CardHeader>
                             <CardTitle>Maintenance Mode</CardTitle>
@@ -217,48 +213,26 @@ export default function SettingsPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            <FormField
-                                control={settingsForm.control}
-                                name="maintenanceMode"
-                                render={({ field }) => (
-                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                        <div className="space-y-0.5">
-                                            <FormLabel className="text-base">Enable Maintenance Mode</FormLabel>
-                                            <FormDescription>
-                                                If enabled, all non-admin users will see the maintenance page.
-                                            </FormDescription>
-                                        </div>
-                                        <FormControl>
-                                            <Switch checked={field.value} onCheckedChange={field.onChange} />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={settingsForm.control}
-                                name="maintenanceMessage"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Maintenance Message</FormLabel>
-                                        <FormControl>
-                                            <Textarea
-                                                placeholder="Tell users what's happening..."
-                                                className="resize-none"
-                                                {...field}
-                                                value={field.value ?? ''}
-                                            />
-                                        </FormControl>
-                                        <FormDescription>
-                                            This message will be displayed to users on the maintenance page.
-                                        </FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <FormField control={settingsForm.control} name="maintenanceMode" render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                        <FormLabel className="text-base">Enable Maintenance Mode</FormLabel>
+                                        <FormDescription>If enabled, all non-admin users will see the maintenance page.</FormDescription>
+                                    </div>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )} />
+                            <FormField control={settingsForm.control} name="maintenanceMessage" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Maintenance Message</FormLabel>
+                                    <FormControl><Textarea placeholder="Tell users what's happening..." className="resize-none" {...field} value={field.value ?? ''} /></FormControl>
+                                    <FormDescription>This message will be displayed to users on the maintenance page.</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
                         </CardContent>
                     </Card>
 
-                    {/* Admin Wallets */}
                     <Card>
                         <CardHeader>
                             <CardTitle>Admin Wallet Details</CardTitle>
@@ -266,47 +240,45 @@ export default function SettingsPage() {
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="grid md:grid-cols-2 gap-6">
-                                {/* JazzCash Form */}
-                                <Form {...jazzcashForm}>
-                                    <div className="space-y-4 p-4 border rounded-lg">
-                                        <h3 className="font-semibold text-lg">JazzCash Account</h3>
-                                        <FormField control={jazzcashForm.control} name="accountHolderName" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Account Holder Name</FormLabel>
-                                                <FormControl><Input {...field} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        <FormField control={jazzcashForm.control} name="accountNumber" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Account Number</FormLabel>
-                                                <FormControl><Input {...field} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                    </div>
-                                </Form>
+                                <div className="space-y-4 p-4 border rounded-lg">
+                                    <h3 className="font-semibold text-lg">JazzCash Account</h3>
+                                    <Form {...jazzcashForm}>
+                                    <FormField control={jazzcashForm.control} name="accountHolderName" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Account Holder Name</FormLabel>
+                                            <FormControl><Input {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                    <FormField control={jazzcashForm.control} name="accountNumber" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Account Number</FormLabel>
+                                            <FormControl><Input {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                    </Form>
+                                </div>
 
-                                {/* Easypaisa Form */}
-                                <Form {...easypaisaForm}>
-                                     <div className="space-y-4 p-4 border rounded-lg">
-                                        <h3 className="font-semibold text-lg">Easypaisa Account</h3>
-                                        <FormField control={easypaisaForm.control} name="accountHolderName" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Account Holder Name</FormLabel>
-                                                <FormControl><Input {...field} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        <FormField control={easypaisaForm.control} name="accountNumber" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Account Number</FormLabel>
-                                                <FormControl><Input {...field} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                    </div>
-                                </Form>
+                                 <div className="space-y-4 p-4 border rounded-lg">
+                                    <h3 className="font-semibold text-lg">Easypaisa Account</h3>
+                                    <Form {...easypaisaForm}>
+                                    <FormField control={easypaisaForm.control} name="accountHolderName" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Account Holder Name</FormLabel>
+                                            <FormControl><Input {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                    <FormField control={easypaisaForm.control} name="accountNumber" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Account Number</FormLabel>
+                                            <FormControl><Input {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                    </Form>
+                                </div>
                             </div>
                              <Button type="button" onClick={handleWalletsSubmit} disabled={jazzcashForm.formState.isSubmitting || easypaisaForm.formState.isSubmitting}>
                                 Save Wallet Details
@@ -314,7 +286,6 @@ export default function SettingsPage() {
                         </CardContent>
                     </Card>
 
-                    {/* Transaction Limits */}
                     <Card>
                         <CardHeader>
                             <CardTitle>Transaction Limits</CardTitle>
@@ -359,5 +330,3 @@ export default function SettingsPage() {
         </div>
     );
 }
-
-    

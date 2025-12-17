@@ -1,7 +1,7 @@
 export type InvestmentPlan = {
-  id: string; // Changed to string for Firestore
+  id: string;
   name: string;
-  categoryId: string; // Added categoryId
+  categoryId: string;
   dailyReturn: number;
   period: number;
   minInvest: number;
@@ -16,10 +16,12 @@ export type InvestmentCategory = {
 
 export type Transaction = {
   id: string;
-  timestamp: string | Date | { seconds: number, nanoseconds: number }; // Allow Date object & Firestore Timestamp
+  timestamp: string | Date | { seconds: number, nanoseconds: number };
   type: "Deposit" | "Withdrawal" | "Investment";
   amount: number;
   status: "Pending" | "Completed" | "Failed";
+  method?: 'JazzCash' | 'Easypaisa' | 'Bank'; // Added for withdrawal
+  bankName?: string; // Added for bank withdrawal
 };
 
 export type AdminWallet = {
@@ -37,9 +39,10 @@ export type AppSettings = {
     maxWithdrawal: number;
     maintenanceMode: boolean;
     maintenanceMessage: string;
-    depositsEnabled: boolean;
-    withdrawalsEnabled: boolean;
     investmentsEnabled: boolean;
+    depositJazzCashEnabled: boolean;
+    depositEasypaisaEnabled: boolean;
+    withdrawalJazzCashEnabled: boolean;
+    withdrawalEasypaisaEnabled: boolean;
+    withdrawalBankEnabled: boolean;
 }
-
-    

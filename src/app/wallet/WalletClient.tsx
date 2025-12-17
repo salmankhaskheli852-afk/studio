@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -63,43 +63,24 @@ export function WalletClient() {
   );
   const { data: appSettings, isLoading: areSettingsLoading } = useDoc<AppSettings>(appSettingsDocRef);
 
-  // Dynamic schemas
-  const [depositSchema, setDepositSchema] = useState(z.object({
+  const depositSchema = z.object({
     depositTo: z.string({ required_error: "You need to select a deposit method." }),
     accountHolderName: z.string().min(3, 'Name must be at least 3 characters.'),
     accountNumber: z.string().min(11, 'Please enter a valid account number.'),
-    amount: z.coerce.number().min(1000).max(5000000),
+    amount: z.coerce.number().min(appSettings?.minDeposit ?? 1, `Minimum deposit is ${appSettings?.minDeposit ?? 1}.`).max(appSettings?.maxDeposit ?? 5000000, `Maximum deposit is ${appSettings?.maxDeposit ?? 5000000}.`),
     transactionId: z.string().min(5, 'Please enter a valid Transaction ID (TID).'),
-  }));
+  });
 
-  const [withdrawSchema, setWithdrawSchema] = useState(z.object({
-    method: z.enum(['JazzCash', 'Easypaisa'], { required_error: 'You need to select a withdrawal method.' }),
+  const withdrawSchema = z.object({
+    method: z.enum(['JazzCash', 'Easypaisa', 'Bank'], { required_error: 'You need to select a withdrawal method.' }),
     accountHolderName: z.string().min(3, 'Name must be at least 3 characters.'),
     accountNumber: z.string().min(11, 'Please enter a valid account number.'),
-    amount: z.coerce.number().min(1000).max(5000000),
-  }));
-
-  useEffect(() => {
-      if (appSettings) {
-          setDepositSchema(
-              z.object({
-                depositTo: z.string({ required_error: "You need to select a deposit method." }),
-                accountHolderName: z.string().min(3, 'Name must be at least 3 characters.'),
-                accountNumber: z.string().min(11, 'Please enter a valid account number.'),
-                amount: z.coerce.number().min(appSettings.minDeposit, `Minimum deposit is ${appSettings.minDeposit}.`).max(appSettings.maxDeposit, `Maximum deposit is ${appSettings.maxDeposit}.`),
-                transactionId: z.string().min(5, 'Please enter a valid Transaction ID (TID).'),
-              })
-          );
-          setWithdrawSchema(
-              z.object({
-                method: z.enum(['JazzCash', 'Easypaisa'], { required_error: 'You need to select a withdrawal method.' }),
-                accountHolderName: z.string().min(3, 'Name must be at least 3 characters.'),
-                accountNumber: z.string().min(11, 'Please enter a valid account number.'),
-                amount: z.coerce.number().min(appSettings.minWithdrawal, `Minimum withdrawal is ${appSettings.minWithdrawal}.`).max(appSettings.maxWithdrawal, `Maximum withdrawal is ${appSettings.maxWithdrawal}.`),
-              })
-          );
-      }
-  }, [appSettings]);
+    amount: z.coerce.number().min(appSettings?.minWithdrawal ?? 1, `Minimum withdrawal is ${appSettings?.minWithdrawal ?? 1}.`).max(appSettings?.maxWithdrawal ?? 5000000, `Maximum withdrawal is ${appSettings?.maxWithdrawal ?? 5000000}.`),
+    bankName: z.string().optional(),
+  }).refine(data => !(data.method === 'Bank' && !data.bankName), {
+    message: "Bank name is required for bank transfer",
+    path: ["bankName"],
+  });
 
 
   const depositForm = useForm<z.infer<typeof depositSchema>>({
@@ -108,6 +89,7 @@ export function WalletClient() {
       accountHolderName: '',
       accountNumber: '',
       transactionId: '',
+      amount: appSettings?.minDeposit
     },
   });
 
@@ -116,13 +98,19 @@ export function WalletClient() {
     defaultValues: {
       accountHolderName: '',
       accountNumber: '',
+      amount: appSettings?.minWithdrawal
     },
+  });
+  
+  const watchedWithdrawMethod = useWatch({
+    control: withdrawForm.control,
+    name: 'method',
   });
 
   useEffect(() => {
     if(appSettings){
-        depositForm.reset({amount: appSettings.minDeposit});
-        withdrawForm.reset({amount: appSettings.minWithdrawal});
+        if (!isDepositOpen) depositForm.reset({amount: appSettings.minDeposit, accountHolderName: '', accountNumber: '', transactionId: ''});
+        if (!isWithdrawOpen) withdrawForm.reset({amount: appSettings.minWithdrawal, accountHolderName: '', accountNumber: ''});
     }
   }, [appSettings, depositForm, withdrawForm, isDepositOpen, isWithdrawOpen]);
 
@@ -189,8 +177,15 @@ export function WalletClient() {
     }
   }
 
-  const depositsDisabled = appSettings?.depositsEnabled === false;
-  const withdrawalsDisabled = appSettings?.withdrawalsEnabled === false;
+  const enabledDepositMethods = adminWallets?.filter(wallet => {
+      if (wallet.walletName === 'JazzCash' && appSettings?.depositJazzCashEnabled) return true;
+      if (wallet.walletName === 'Easypaisa' && appSettings?.depositEasypaisaEnabled) return true;
+      return false;
+  });
+
+  const noDepositMethodsEnabled = !enabledDepositMethods || enabledDepositMethods.length === 0;
+
+  const noWithdrawalMethodsEnabled = !appSettings?.withdrawalJazzCashEnabled && !appSettings?.withdrawalEasypaisaEnabled && !appSettings?.withdrawalBankEnabled;
 
   return (
     <div className="space-y-6">
@@ -208,7 +203,7 @@ export function WalletClient() {
           <CardContent className="flex justify-center gap-4">
             <Dialog open={isDepositOpen} onOpenChange={setDepositOpen}>
               <DialogTrigger asChild>
-                <Button size="lg" className="flex-1" disabled={depositsDisabled}>
+                <Button size="lg" className="flex-1" disabled={noDepositMethodsEnabled || areSettingsLoading}>
                   <ArrowDownToDot className="mr-2 h-5 w-5" />
                   Deposit
                 </Button>
@@ -235,7 +230,7 @@ export function WalletClient() {
                                 defaultValue={field.value}
                                 className="space-y-2"
                                 >
-                                {areWalletsLoading ? <p>Loading accounts...</p> : adminWallets?.map(wallet => (
+                                {areWalletsLoading ? <p>Loading accounts...</p> : enabledDepositMethods?.map(wallet => (
                                     <FormItem key={wallet.id} className="flex items-center space-x-3 space-y-0 rounded-md border p-3 has-[:checked]:border-primary">
                                         <FormControl>
                                             <RadioGroupItem value={wallet.walletName} />
@@ -295,7 +290,7 @@ export function WalletClient() {
 
             <Dialog open={isWithdrawOpen} onOpenChange={setWithdrawOpen}>
               <DialogTrigger asChild>
-                <Button size="lg" variant="secondary" className="flex-1" disabled={withdrawalsDisabled}>
+                <Button size="lg" variant="secondary" className="flex-1" disabled={noWithdrawalMethodsEnabled || areSettingsLoading}>
                   <ArrowUpFromDot className="mr-2 h-5 w-5" />
                   Withdraw
                 </Button>
@@ -313,21 +308,41 @@ export function WalletClient() {
                         <FormItem className="space-y-3">
                           <FormLabel>Select Method</FormLabel>
                            <FormControl>
-                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4">
+                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-wrap gap-4">
+                                {appSettings?.withdrawalJazzCashEnabled && (
                                 <FormItem className="flex items-center space-x-2 space-y-0">
                                   <FormControl><RadioGroupItem value="JazzCash" /></FormControl>
                                   <FormLabel className="font-normal">JazzCash</FormLabel>
                                 </FormItem>
+                                )}
+                                {appSettings?.withdrawalEasypaisaEnabled && (
                                 <FormItem className="flex items-center space-x-2 space-y-0">
                                   <FormControl><RadioGroupItem value="Easypaisa" /></FormControl>
                                   <FormLabel className="font-normal">Easypaisa</FormLabel>
                                 </FormItem>
+                                )}
+                                {appSettings?.withdrawalBankEnabled && (
+                                <FormItem className="flex items-center space-x-2 space-y-0">
+                                  <FormControl><RadioGroupItem value="Bank" /></FormControl>
+                                  <FormLabel className="font-normal">Bank Transfer</FormLabel>
+                                </FormItem>
+                                )}
                             </RadioGroup>
                            </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+                    {watchedWithdrawMethod === 'Bank' && (
+                       <FormField control={withdrawForm.control} name="bankName" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Bank Name</FormLabel>
+                           <FormControl><Input placeholder="e.g., HBL, Meezan Bank" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    )}
                     <FormField control={withdrawForm.control} name="accountHolderName" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Account Holder Name</FormLabel>
@@ -338,8 +353,8 @@ export function WalletClient() {
                     />
                      <FormField control={withdrawForm.control} name="accountNumber" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Account Number</FormLabel>
-                          <FormControl><Input placeholder="03xxxxxxxxx" {...field} /></FormControl>
+                          <FormLabel>Account Number / IBAN</FormLabel>
+                          <FormControl><Input placeholder="PK..." {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -368,5 +383,3 @@ export function WalletClient() {
     </div>
   );
 }
-
-    

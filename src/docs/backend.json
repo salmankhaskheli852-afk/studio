@@ -123,7 +123,7 @@
         },
         "accountHolderName": {
           "type": "string",
-          "description": "Account holder name for deposit verification"
+          "description": "Account holder name for deposit verification or withdrawal."
         },
         "accountNumber": {
           "type": "string",
@@ -137,6 +137,15 @@
             "type": "string",
             "description": "The status of the transaction.",
             "enum": ["Pending", "Completed", "Failed"]
+        },
+        "method": {
+            "type": "string",
+            "description": "The method used for withdrawal (e.g., JazzCash, Easypaisa, Bank).",
+            "enum": ["JazzCash", "Easypaisa", "Bank"]
+        },
+        "bankName": {
+            "type": "string",
+            "description": "The name of the bank if the withdrawal method is Bank."
         }
       },
       "required": [
@@ -249,18 +258,15 @@
                 "type": "string",
                 "description": "The message to display to users when maintenance mode is active."
             },
-            "depositsEnabled": {
-                "type": "boolean",
-                "description": "Flag to enable or disable deposits globally."
-            },
-            "withdrawalsEnabled": {
-                "type": "boolean",
-                "description": "Flag to enable or disable withdrawals globally."
-            },
             "investmentsEnabled": {
                 "type": "boolean",
                 "description": "Flag to enable or disable new investments globally."
-            }
+            },
+            "depositJazzCashEnabled": { "type": "boolean" },
+            "depositEasypaisaEnabled": { "type": "boolean" },
+            "withdrawalJazzCashEnabled": { "type": "boolean" },
+            "withdrawalEasypaisaEnabled": { "type": "boolean" },
+            "withdrawalBankEnabled": { "type": "boolean" }
         },
         "required": [
             "id",
@@ -269,9 +275,12 @@
             "minWithdrawal",
             "maxWithdrawal",
             "maintenanceMode",
-            "depositsEnabled",
-            "withdrawalsEnabled",
-            "investmentsEnabled"
+            "investmentsEnabled",
+            "depositJazzCashEnabled",
+            "depositEasypaisaEnabled",
+            "withdrawalJazzCashEnabled",
+            "withdrawalEasypaisaEnabled",
+            "withdrawalBankEnabled"
         ]
     }
   },
@@ -392,4 +401,3 @@
   }
 }
 
-    
