@@ -191,9 +191,6 @@ export function WalletClient() {
 
   const noWithdrawalMethodsEnabled = !appSettings?.withdrawalJazzCashEnabled && !appSettings?.withdrawalEasypaisaEnabled && !appSettings?.withdrawalBankEnabled;
   
-  const whatsappLink = appSettings?.customerCareWhatsapp
-    ? `https://wa.me/${appSettings.customerCareWhatsapp.replace(/[^0-9]/g, '')}`
-    : null;
 
   return (
     <div className="space-y-6">
@@ -399,25 +396,6 @@ export function WalletClient() {
           </CardContent>
         </Card>
       </div>
-        
-      {whatsappLink && (
-        <div className="flex justify-center pt-4">
-            <Card className="w-full max-w-lg">
-                <CardHeader>
-                    <CardTitle>Customer Service</CardTitle>
-                    <CardDescription>Need help? Contact our support team directly.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Button asChild className="w-full" variant="outline">
-                        <Link href={whatsappLink} target="_blank" rel="noopener noreferrer">
-                            <LifeBuoy className="mr-2 h-5 w-5" />
-                            Contact Service
-                        </Link>
-                    </Button>
-                </CardContent>
-            </Card>
-        </div>
-      )}
     </div>
   );
 }

@@ -21,6 +21,8 @@ import {
   Package,
   RefreshCw,
   LifeBuoy,
+  FileText,
+  ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -64,6 +66,11 @@ const allNavItems = [
   { href: '/admin/investments', label: 'Investments', icon: Package, roles: ['admin'] },
   { href: '/admin/settings', label: 'Settings', icon: Settings, roles: ['admin'] },
   { href: '/admin/help', label: 'Help', icon: LifeBuoy, roles: ['admin'] },
+  
+  // Shared items
+  { href: '/terms', label: 'Terms & Conditions', icon: FileText, roles: ['user', 'admin'] },
+  { href: '/security', label: 'Security', icon: ShieldCheck, roles: ['user', 'admin'] },
+  { href: 'whatsapp', label: 'Service', icon: LifeBuoy, roles: ['user', 'admin'] },
 ];
 
 const ADMIN_EMAIL = "salmankhaskheli885@gmail.com";
@@ -126,9 +133,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const navItems = useMemo(() => {
     return allNavItems.filter(item => {
+        if (item.href === 'whatsapp' && !whatsappLink) return false;
         return item.roles.includes(userRole);
     });
-  }, [userRole]);
+  }, [userRole, whatsappLink]);
 
 
   const NavContent = () => (
@@ -142,9 +150,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <span className="font-headline">InvestPro {isAdmin && 'Admin'}</span>
       </Link>
       {navItems.map((item) => {
-          const href = item.href;
-          const target = undefined;
-          const rel = undefined;
+          const isWhatsAppLink = item.href === 'whatsapp';
+          const href = isWhatsAppLink ? whatsappLink! : item.href;
+          const target = isWhatsAppLink ? '_blank' : undefined;
+          const rel = isWhatsAppLink ? 'noopener noreferrer' : undefined;
 
           return (
             <Link
@@ -155,7 +164,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               onClick={() => setSheetOpen(false)}
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary',
-                pathname === item.href
+                pathname === item.href && !isWhatsAppLink
                   ? 'bg-primary/10 text-primary'
                   : 'text-muted-foreground'
               )}
