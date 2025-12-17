@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,6 +33,7 @@ const getPlanIcon = (planName: string) => {
 export default function InvestPage() {
   const [selectedPlan, setSelectedPlan] = useState<InvestmentPlan | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isInsufficientBalanceDialogOpen, setInsufficientBalanceDialogOpen] = useState(false);
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -56,11 +58,7 @@ export default function InvestPage() {
 
   const handleInvestClick = (plan: InvestmentPlan) => {
     if ((walletData?.balance ?? 0) < plan.minInvest) {
-      toast({
-        variant: "destructive",
-        title: "Insufficient Balance",
-        description: "You do not have enough funds to purchase this plan.",
-      });
+      setInsufficientBalanceDialogOpen(true);
       return;
     }
     setSelectedPlan(plan);
@@ -237,8 +235,23 @@ export default function InvestPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      <Dialog open={isInsufficientBalanceDialogOpen} onOpenChange={setInsufficientBalanceDialogOpen}>
+          <DialogContent>
+              <DialogHeader className="items-center text-center">
+                  <div className="p-4 bg-destructive/10 rounded-full w-fit mb-4">
+                      <PiggyBank className="h-10 w-10 text-destructive" />
+                  </div>
+                  <DialogTitle className="text-2xl font-bold">Please Recharge</DialogTitle>
+                  <DialogDescription>You do not have enough funds to purchase this plan. Please add funds to your wallet.</DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="justify-center pt-4">
+                  <Button asChild size="lg">
+                      <Link href="/wallet">Recharge Now</Link>
+                  </Button>
+              </DialogFooter>
+          </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
-    
