@@ -210,6 +210,36 @@
         "accountNumber",
         "accountHolderName"
       ]
+    },
+    "AppSettings": {
+        "title": "Application Settings",
+        "type": "object",
+        "description": "Global settings for the application, like transaction limits.",
+        "properties": {
+            "id": {
+                "type": "string",
+                "description": "Unique identifier for the settings document."
+            },
+            "minDeposit": {
+                "type": "number"
+            },
+            "maxDeposit": {
+                "type": "number"
+            },
+            "minWithdrawal": {
+                "type": "number"
+            },
+            "maxWithdrawal": {
+                "type": "number"
+            }
+        },
+        "required": [
+            "id",
+            "minDeposit",
+            "maxDeposit",
+            "minWithdrawal",
+            "maxWithdrawal"
+        ]
     }
   },
   "auth": {
@@ -307,10 +337,16 @@
             }
           ]
         }
+      },
+      {
+        "path": "/app_settings/{settingsId}",
+        "definition": {
+          "entityName": "AppSettings",
+          "schema": { "$ref": "#/backend/entities/AppSettings" },
+          "description": "Stores global application settings. Publicly readable, admin-only writable."
+        }
       }
     ],
     "reasoning": "The Firestore data structure is designed to ensure authorization independence, clarity, and scalability for the InvestPro Wallet application. It leverages path-based ownership for user-specific data and structural segregation to maintain a homogeneous security posture within each collection. Denormalization is employed to avoid `get()` calls in security rules and ensure atomic operations.\n\n*   **Users:** Each user has their own document in the `/users` collection. This allows for simple, path-based security rules that restrict access to a user's data only to themselves. Admins are granted read access to all user documents for management purposes.\n*   **Wallets:** Each user has a single associated wallet stored in `/users/{userId}/wallet`. Path-based ownership ensures only the user can access their wallet.\n*   **Transactions:** Each wallet has multiple transactions, stored in `/users/{userId}/wallet/transactions/{transactionId}`. Again, path-based ownership ensures only the user can access their transactions.\n*   **Investment Plans:** Investment plans are stored in a root-level `/investment_plans` collection. These plans are globally accessible but writes are restricted to authorized roles (e.g., admins, not modeled here).\n*   **Admin Wallet Details:** These are stored in the root-level `/admin_wallet_details` collection. Read access can be controlled, and write access can be limited to admins (roles are not modeled, but an example is provided).\n\nAuthorization Independence is achieved primarily through path-based ownership. For example, to access a user's transactions, we don't need to `get()` the wallet to verify ownership; the path `/users/{userId}/wallet/transactions/{transactionId}` inherently enforces this. This eliminates hierarchical authorization dependencies.\n\nQAPs (Rules are not Filters) are supported by the structural segregation. For example, listing transactions is always scoped to a specific user's wallet due to the path structure. This ensures that list operations are secure and efficient without complex filtering in the rules."
   }
 }
-
-    

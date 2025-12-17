@@ -16,6 +16,7 @@ import {
   ArrowDownToDot,
   ArrowUpFromDot,
   Wallet,
+  Settings,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -46,6 +47,7 @@ const allNavItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, adminOnly: true },
   { href: '/admin/deposits', label: 'Deposit Requests', icon: ArrowDownToDot, adminOnly: true },
   { href: '/admin/withdrawals', label: 'Withdrawal Requests', icon: ArrowUpFromDot, adminOnly: true },
+  { href: '/admin/settings', label: 'Settings', icon: Settings, adminOnly: true },
 ];
 
 const ADMIN_EMAIL = "salmankhaskheli885@gmail.com";

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -33,33 +33,10 @@ import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ArrowDownToDot, ArrowUpFromDot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser, useDoc, useMemoFirebase, useCollection } from '@/firebase';
 import { useFirestore } from '@/firebase/provider';
 import { collection, addDoc, serverTimestamp, doc, runTransaction, increment } from 'firebase/firestore';
-import { adminWallets } from '@/lib/data';
-
-
-// Deposit Schema
-const depositSchema = z.object({
-  depositTo: z.enum(adminWallets.map(w => w.name) as [string, ...string[]], {
-    required_error: "You need to select a deposit method."
-  }),
-  accountHolderName: z.string().min(3, 'Name must be at least 3 characters.'),
-  accountNumber: z.string().min(11, 'Please enter a valid account number.'),
-  amount: z.coerce.number().min(1000, 'Minimum deposit is 1,000.').max(5000000, 'Maximum deposit is 5,000,000.'),
-  transactionId: z.string().min(5, 'Please enter a valid Transaction ID (TID).'),
-});
-
-// Withdraw Schema
-const withdrawSchema = z.object({
-  method: z.enum(['JazzCash', 'Easypaisa'], {
-    required_error: 'You need to select a withdrawal method.',
-  }),
-  accountHolderName: z.string().min(3, 'Name must be at least 3 characters.'),
-  accountNumber: z.string().min(11, 'Please enter a valid account number.'),
-  amount: z.coerce.number().min(1000, 'Minimum withdrawal is 1,000.').max(5000000, 'Maximum withdrawal is 5,000,000.'),
-});
-
+import type { AdminWallet, AppSettings } from '@/lib/data';
 
 export function WalletClient() {
   const [isDepositOpen, setDepositOpen] = useState(false);
@@ -72,14 +49,64 @@ export function WalletClient() {
     () => (user ? doc(firestore, `users/${user.uid}/wallet`, user.uid) : null),
     [firestore, user]
   );
-  const { data: walletData, isLoading: isWalletLoading } = useDoc(walletDocRef);
+  const { data: walletData } = useDoc(walletDocRef);
+
+  const adminWalletsQuery = useMemoFirebase(
+      () => firestore ? collection(firestore, 'admin_wallet_details') : null,
+      [firestore]
+  );
+  const { data: adminWallets, isLoading: areWalletsLoading } = useCollection<AdminWallet>(adminWalletsQuery);
+
+  const appSettingsDocRef = useMemoFirebase(
+      () => firestore ? doc(firestore, 'app_settings', 'transaction_limits') : null,
+      [firestore]
+  );
+  const { data: appSettings, isLoading: areSettingsLoading } = useDoc<AppSettings>(appSettingsDocRef);
+
+  // Dynamic schemas
+  const [depositSchema, setDepositSchema] = useState(z.object({
+    depositTo: z.string({ required_error: "You need to select a deposit method." }),
+    accountHolderName: z.string().min(3, 'Name must be at least 3 characters.'),
+    accountNumber: z.string().min(11, 'Please enter a valid account number.'),
+    amount: z.coerce.number().min(1000).max(5000000),
+    transactionId: z.string().min(5, 'Please enter a valid Transaction ID (TID).'),
+  }));
+
+  const [withdrawSchema, setWithdrawSchema] = useState(z.object({
+    method: z.enum(['JazzCash', 'Easypaisa'], { required_error: 'You need to select a withdrawal method.' }),
+    accountHolderName: z.string().min(3, 'Name must be at least 3 characters.'),
+    accountNumber: z.string().min(11, 'Please enter a valid account number.'),
+    amount: z.coerce.number().min(1000).max(5000000),
+  }));
+
+  useEffect(() => {
+      if (appSettings) {
+          setDepositSchema(
+              z.object({
+                depositTo: z.string({ required_error: "You need to select a deposit method." }),
+                accountHolderName: z.string().min(3, 'Name must be at least 3 characters.'),
+                accountNumber: z.string().min(11, 'Please enter a valid account number.'),
+                amount: z.coerce.number().min(appSettings.minDeposit, `Minimum deposit is ${appSettings.minDeposit}.`).max(appSettings.maxDeposit, `Maximum deposit is ${appSettings.maxDeposit}.`),
+                transactionId: z.string().min(5, 'Please enter a valid Transaction ID (TID).'),
+              })
+          );
+          setWithdrawSchema(
+              z.object({
+                method: z.enum(['JazzCash', 'Easypaisa'], { required_error: 'You need to select a withdrawal method.' }),
+                accountHolderName: z.string().min(3, 'Name must be at least 3 characters.'),
+                accountNumber: z.string().min(11, 'Please enter a valid account number.'),
+                amount: z.coerce.number().min(appSettings.minWithdrawal, `Minimum withdrawal is ${appSettings.minWithdrawal}.`).max(appSettings.maxWithdrawal, `Maximum withdrawal is ${appSettings.maxWithdrawal}.`),
+              })
+          );
+      }
+  }, [appSettings]);
+
 
   const depositForm = useForm<z.infer<typeof depositSchema>>({
     resolver: zodResolver(depositSchema),
     defaultValues: {
       accountHolderName: '',
       accountNumber: '',
-      amount: 1000,
       transactionId: '',
     },
   });
@@ -89,9 +116,16 @@ export function WalletClient() {
     defaultValues: {
       accountHolderName: '',
       accountNumber: '',
-      amount: 1000,
     },
   });
+
+  useEffect(() => {
+    if(appSettings){
+        depositForm.reset({amount: appSettings.minDeposit});
+        withdrawForm.reset({amount: appSettings.minWithdrawal});
+    }
+  }, [appSettings, depositForm, withdrawForm, isDepositOpen, isWithdrawOpen]);
+
 
   async function onDepositSubmit(values: z.infer<typeof depositSchema>) {
     if (!user || !firestore) {
@@ -133,14 +167,12 @@ export function WalletClient() {
             const walletRef = doc(firestore, `users/${user.uid}/wallet`, user.uid);
             const transactionsColRef = collection(firestore, `users/${user.uid}/wallet/${user.uid}/transactions`);
             
-            // 1. Deduct balance from wallet
             transaction.update(walletRef, { balance: increment(-values.amount) });
             
-            // 2. Create withdrawal transaction record
-            const newTransactionRef = doc(transactionsColRef); // Create a new doc ref to add
+            const newTransactionRef = doc(transactionsColRef);
             transaction.set(newTransactionRef, {
                 ...values,
-                amount: -values.amount, // Store as negative
+                amount: -values.amount,
                 type: 'Withdrawal',
                 status: 'Pending',
                 timestamp: serverTimestamp(),
@@ -171,7 +203,6 @@ export function WalletClient() {
             <CardDescription>Select an option to manage your funds.</CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center gap-4">
-            {/* Deposit Button & Dialog */}
             <Dialog open={isDepositOpen} onOpenChange={setDepositOpen}>
               <DialogTrigger asChild>
                 <Button size="lg" className="flex-1">
@@ -201,14 +232,14 @@ export function WalletClient() {
                                 defaultValue={field.value}
                                 className="space-y-2"
                                 >
-                                {adminWallets.map(wallet => (
-                                    <FormItem key={wallet.name} className="flex items-center space-x-3 space-y-0 rounded-md border p-3 has-[:checked]:border-primary">
+                                {areWalletsLoading ? <p>Loading accounts...</p> : adminWallets?.map(wallet => (
+                                    <FormItem key={wallet.id} className="flex items-center space-x-3 space-y-0 rounded-md border p-3 has-[:checked]:border-primary">
                                         <FormControl>
-                                            <RadioGroupItem value={wallet.name} />
+                                            <RadioGroupItem value={wallet.walletName} />
                                         </FormControl>
                                         <FormLabel className="font-normal w-full">
-                                             <h4 className="font-semibold">{wallet.name}</h4>
-                                             <p className="text-sm">Name: {wallet.accountName}</p>
+                                             <h4 className="font-semibold">{wallet.walletName}</h4>
+                                             <p className="text-sm">Name: {wallet.accountHolderName}</p>
                                              <p className="text-sm">Number: {wallet.accountNumber}</p>
                                         </FormLabel>
                                     </FormItem>
@@ -252,14 +283,13 @@ export function WalletClient() {
                       )}
                     />
                     <DialogFooter>
-                      <Button type="submit">Submit Request</Button>
+                      <Button type="submit" disabled={areSettingsLoading}>Submit Request</Button>
                     </DialogFooter>
                   </form>
                 </Form>
               </DialogContent>
             </Dialog>
 
-            {/* Withdraw Button & Dialog */}
             <Dialog open={isWithdrawOpen} onOpenChange={setWithdrawOpen}>
               <DialogTrigger asChild>
                 <Button size="lg" variant="secondary" className="flex-1">
@@ -320,7 +350,9 @@ export function WalletClient() {
                       )}
                     />
                     <DialogFooter>
-                      <Button type="submit" disabled={isWalletLoading}>{isWalletLoading ? "Checking..." : "Submit Request"}</Button>
+                      <Button type="submit" disabled={areSettingsLoading || (walletData?.balance ?? 0) < withdrawForm.getValues('amount')}>
+                        {areSettingsLoading ? "Loading..." : "Submit Request"}
+                      </Button>
                     </DialogFooter>
                   </form>
                 </Form>

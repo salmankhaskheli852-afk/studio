@@ -123,5 +123,20 @@ service cloud.firestore {
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
+
+    /**
+     * @description Manages global application settings like transaction limits.
+     * @path /app_settings/{settingsId}
+     * @allow All users can read the settings.
+     * @deny Only admins can write to the settings.
+     * @principle Public read for client-side rules, admin-only write for configuration.
+     */
+    match /app_settings/{settingsId} {
+        allow get: if true;
+        allow list: if true;
+        allow create: if isAdmin();
+        allow update: if isAdmin();
+        allow delete: if isAdmin();
+    }
   }
 }

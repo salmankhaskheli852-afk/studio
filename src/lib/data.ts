@@ -42,53 +42,17 @@ export type Transaction = {
   status: "Pending" | "Completed" | "Failed";
 };
 
-export const transactions: Transaction[] = [
-  {
-    id: "txn_1",
-    timestamp: "2024-07-28T10:00:00Z",
-    type: "Deposit",
-    amount: 5000,
-    status: "Completed",
-  },
-  {
-    id: "txn_2",
-    timestamp: "2024-07-27T11:00:00Z",
-    type: "Investment",
-    amount: -1000,
-    status: "Completed",
-  },
-  {
-    id: "txn_3",
-    timestamp: "2024-07-26T12:00:00Z",
-    type: "Withdrawal",
-    amount: -500,
-    status: "Pending",
-  },
-  {
-    id: "txn_4",
-    timestamp: "2024-07-25T13:00:00Z",
-    type: "Deposit",
-    amount: 2000,
-    status: "Completed",
-  },
-  {
-    id: "txn_5",
-    timestamp: "2024-07-24T14:00:00Z",
-    type: "Withdrawal",
-    amount: -1000,
-    status: "Failed",
-  },
-];
+export type AdminWallet = {
+    id: string;
+    walletName: string;
+    accountHolderName: string;
+    accountNumber: string;
+}
 
-export const adminWallets = [
-  {
-    name: "JazzCash",
-    accountName: "Admin Name",
-    accountNumber: "0300-1234567",
-  },
-  {
-    name: "Easypaisa",
-    accountName: "Admin Name",
-    accountNumber: "0345-7654321",
-  },
-];
+export type AppSettings = {
+    id: string;
+    minDeposit: number;
+    maxDeposit: number;
+    minWithdrawal: number;
+    maxWithdrawal: number;
+}
