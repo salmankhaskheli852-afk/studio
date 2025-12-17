@@ -36,7 +36,7 @@ export default function HelpPage() {
                         <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
                            <FilePlus2 className="h-10 w-10 text-primary" />
                         </div>
-                        <CardTitle className="mt-4">Add Your Personal Plan</CardTitle>
+                        <CardTitle className="mt-4">Paid Plan</CardTitle>
                         <CardDescription>
                             Looking for a customized investment plan? Get in touch with us to discuss your needs.
                         </CardDescription>
