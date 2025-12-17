@@ -31,12 +31,14 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowDownToDot, ArrowUpFromDot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useDoc, useMemoFirebase, useCollection } from '@/firebase';
 import { useFirestore } from '@/firebase/provider';
 import { collection, addDoc, serverTimestamp, doc, runTransaction, increment } from 'firebase/firestore';
 import type { AdminWallet, AppSettings } from '@/lib/data';
+import { PAKISTANI_BANKS } from '@/lib/banks';
 
 export function WalletClient() {
   const [isDepositOpen, setDepositOpen] = useState(false);
@@ -337,7 +339,18 @@ export function WalletClient() {
                        <FormField control={withdrawForm.control} name="bankName" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Bank Name</FormLabel>
-                           <FormControl><Input placeholder="e.g., HBL, Meezan Bank" {...field} /></FormControl>
+                           <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a bank" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {PAKISTANI_BANKS.map((bank) => (
+                                        <SelectItem key={bank} value={bank}>{bank}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                           <FormMessage />
                         </FormItem>
                       )}
