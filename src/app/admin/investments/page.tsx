@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useFirestore } from "@/firebase/provider";
 import { useCollection, useMemoFirebase } from '@/firebase';
 import { collection, writeBatch, doc, addDoc, deleteDoc, updateDoc } from "firebase/firestore";
@@ -48,6 +49,7 @@ export default function InvestmentsPage() {
     const [isPlanDialogOpen, setPlanDialogOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<InvestmentCategory | null>(null);
     const [editingPlan, setEditingPlan] = useState<InvestmentPlan | null>(null);
+    const [itemToDelete, setItemToDelete] = useState<{ id: string, type: 'category' | 'plan' } | null>(null);
 
     // Data fetching
     const categoriesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'investment_categories') : null, [firestore]);
@@ -103,7 +105,7 @@ export default function InvestmentsPage() {
     };
 
     const handleDeleteCategory = async (categoryId: string) => {
-        if (!firestore || !window.confirm("Are you sure? This will not delete the plans in it.")) return;
+        if (!firestore) return;
         try {
             await deleteDoc(doc(firestore, 'investment_categories', categoryId));
             toast({ title: "Success", description: "Category deleted." });
@@ -111,6 +113,7 @@ export default function InvestmentsPage() {
             console.error(e);
             toast({ variant: 'destructive', title: "Error", description: "Failed to delete category." });
         }
+        setItemToDelete(null);
     };
 
     // Handlers for Plan
@@ -141,7 +144,7 @@ export default function InvestmentsPage() {
     };
 
     const handleDeletePlan = async (planId: string) => {
-        if (!firestore || !window.confirm("Are you sure you want to delete this plan?")) return;
+        if (!firestore) return;
         try {
             await deleteDoc(doc(firestore, 'investment_plans', planId));
             toast({ title: "Success", description: "Plan deleted." });
@@ -149,6 +152,7 @@ export default function InvestmentsPage() {
             console.error(e);
             toast({ variant: 'destructive', title: "Error", description: "Failed to delete plan." });
         }
+         setItemToDelete(null);
     };
     
     const closeCategoryDialog = () => {
@@ -169,6 +173,15 @@ export default function InvestmentsPage() {
             maxInvest: 0,
         });
     }
+
+    const performDelete = () => {
+        if (!itemToDelete) return;
+        if (itemToDelete.type === 'category') {
+            handleDeleteCategory(itemToDelete.id);
+        } else {
+            handleDeletePlan(itemToDelete.id);
+        }
+    };
 
 
     return (
@@ -229,7 +242,11 @@ export default function InvestmentsPage() {
                                      <TableCell>{cat.description}</TableCell>
                                      <TableCell className="text-right">
                                          <Button variant="ghost" size="icon" onClick={() => handleEditCategory(cat)}><Edit className="h-4 w-4" /></Button>
-                                         <Button variant="ghost" size="icon" onClick={() => handleDeleteCategory(cat.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                         <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" onClick={() => setItemToDelete({ id: cat.id, type: 'category' })}>
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                         </AlertDialogTrigger>
                                      </TableCell>
                                  </TableRow>
                              ))}
@@ -307,7 +324,11 @@ export default function InvestmentsPage() {
                                      <TableCell>PKR {plan.minInvest.toLocaleString()}</TableCell>
                                      <TableCell className="text-right">
                                          <Button variant="ghost" size="icon" onClick={() => handleEditPlan(plan)}><Edit className="h-4 w-4" /></Button>
-                                         <Button variant="ghost" size="icon" onClick={() => handleDeletePlan(plan.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                         <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" onClick={() => setItemToDelete({ id: plan.id, type: 'plan' })}>
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                         </AlertDialogTrigger>
                                      </TableCell>
                                  </TableRow>
                              ))}
@@ -315,6 +336,21 @@ export default function InvestmentsPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+            <AlertDialog open={!!itemToDelete} onOpenChange={(isOpen) => !isOpen && setItemToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the {itemToDelete?.type} and it cannot be recovered.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={performDelete}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
