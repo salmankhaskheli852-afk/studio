@@ -281,6 +281,14 @@
                 "type": "string",
                 "format": "uri",
                 "description": "The base URL for the website, used for generating referral links."
+            },
+            "welcomePopupTitle": {
+                "type": "string",
+                "description": "Title for the admin-defined welcome popup."
+            },
+            "welcomePopupMessage": {
+                "type": "string",
+                "description": "Message for the admin-defined welcome popup."
             }
         },
         "required": [

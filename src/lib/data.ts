@@ -48,6 +48,8 @@ export type AppSettings = {
     withdrawalBankEnabled: boolean;
     customerCareWhatsapp?: string;
     websiteUrl?: string;
+    welcomePopupTitle?: string;
+    welcomePopupMessage?: string;
 }
 
     

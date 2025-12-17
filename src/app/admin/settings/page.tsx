@@ -32,6 +32,8 @@ const settingsSchema = z.object({
     withdrawalBankEnabled: z.boolean().default(true),
     customerCareWhatsapp: z.string().optional(),
     websiteUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
+    welcomePopupTitle: z.string().optional(),
+    welcomePopupMessage: z.string().optional(),
 });
 
 const walletSchema = z.object({
@@ -77,6 +79,8 @@ export default function SettingsPage() {
             withdrawalBankEnabled: true,
             customerCareWhatsapp: '',
             websiteUrl: '',
+            welcomePopupTitle: '',
+            welcomePopupMessage: '',
         }
     });
 
@@ -152,6 +156,52 @@ export default function SettingsPage() {
 
             <Form {...settingsForm}>
                 <form onSubmit={settingsForm.handleSubmit(handleSettingsSubmit)} className="space-y-8">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Welcome Popup</CardTitle>
+                            <CardDescription>
+                               This message will be shown to users in a popup 30 seconds after they log in.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                             <FormField
+                                control={settingsForm.control}
+                                name="welcomePopupTitle"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Popup Title</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder="e.g., Special Announcement"
+                                                {...field}
+                                                value={field.value ?? ''}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={settingsForm.control}
+                                name="welcomePopupMessage"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Popup Message</FormLabel>
+                                        <FormControl>
+                                            <Textarea
+                                                placeholder="Enter the message you want to show to users..."
+                                                className="resize-none"
+                                                {...field}
+                                                value={field.value ?? ''}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </CardContent>
+                    </Card>
+
                     <Card>
                         <CardHeader>
                             <CardTitle>Feature Controls</CardTitle>

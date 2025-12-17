@@ -6,6 +6,7 @@ import { doc, collection, query, where, Timestamp } from "firebase/firestore";
 import { useFirestore } from "@/firebase/provider";
 import { DashboardStats } from "@/components/DashboardStats";
 import { AdvertisementCard } from '@/components/AdvertisementCard';
+import { WelcomePopup } from '@/components/WelcomePopup';
 
 export default function Home() {
   const { user, isUserLoading } = useUser();
@@ -66,6 +67,7 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
+      <WelcomePopup />
       <header>
         <h1 className="text-3xl font-bold tracking-tight font-headline">Welcome to InvestPro</h1>
         <p className="text-muted-foreground">Your dashboard for financial growth.</p>
