@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from "react";
@@ -150,7 +151,7 @@ export default function InvestPage() {
                             const dailyIncome = (plan.minInvest * plan.dailyReturn) / 100;
                             return (
                                 <Card key={plan.id} className="flex flex-col overflow-hidden">
-                                <div className="relative h-40 w-full">
+                                <div className="relative h-48 w-full">
                                     <Image 
                                         src={plan.imageUrl || `https://picsum.photos/seed/${plan.id}/600/400`}
                                         alt={plan.name}
@@ -160,30 +161,32 @@ export default function InvestPage() {
                                         data-ai-hint="investment money"
                                     />
                                 </div>
-                                <CardHeader>
-                                  <div className="flex items-center gap-4">
-                                    {getPlanIcon(plan.name)}
+                                <CardHeader className="p-4">
+                                  <div className="flex items-start gap-3">
+                                    <div className="bg-primary/10 p-2 rounded-lg">
+                                       {getPlanIcon(plan.name)}
+                                    </div>
                                     <div>
-                                      <CardTitle className="font-headline">{plan.name}</CardTitle>
-                                      <CardDescription>Earn {plan.dailyReturn}% daily</CardDescription>
+                                      <CardTitle className="font-headline text-lg">{plan.name}</CardTitle>
+                                      <CardDescription className="text-sm">Earn {plan.dailyReturn}% daily</CardDescription>
                                     </div>
                                   </div>
                                 </CardHeader>
-                                <CardContent className="flex-grow space-y-4">
-                                  <div className="flex justify-between border-t pt-4">
+                                <CardContent className="flex-grow space-y-3 p-4 pt-0">
+                                  <div className="flex justify-between border-t pt-3 text-sm">
                                     <span className="text-muted-foreground">Term</span>
                                     <span className="font-semibold">{plan.period} days</span>
                                   </div>
-                                  <div className="flex justify-between border-t pt-4">
+                                  <div className="flex justify-between border-t pt-3 text-sm">
                                     <span className="text-muted-foreground">Plan Price</span>
                                     <span className="font-semibold">PKR {plan.minInvest.toLocaleString()}</span>
                                   </div>
-                                  <div className="flex justify-between border-t pt-4">
+                                  <div className="flex justify-between border-t pt-3 text-sm">
                                     <span className="text-muted-foreground">Daily Income</span>
                                     <span className="font-semibold">PKR {dailyIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                   </div>
                                 </CardContent>
-                                <CardFooter>
+                                <CardFooter className="p-4">
                                     <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" onClick={() => handleInvestClick(plan)} disabled={investmentsDisabled}>Invest Now</Button>
                                 </CardFooter>
                               </Card>
