@@ -29,6 +29,9 @@ const settingsSchema = z.object({
     maxWithdrawal: z.coerce.number().positive(),
     maintenanceMode: z.boolean().default(false),
     maintenanceMessage: z.string().optional(),
+    depositsEnabled: z.boolean().default(true),
+    withdrawalsEnabled: z.boolean().default(true),
+    investmentsEnabled: z.boolean().default(true),
 });
 
 type WalletFormData = z.infer<typeof walletSchema>;
@@ -62,7 +65,10 @@ export default function SettingsPage() {
             minWithdrawal: 0, 
             maxWithdrawal: 0,
             maintenanceMode: false,
-            maintenanceMessage: "The application is currently under maintenance. We are working to improve your experience. Your funds are safe. Please check back later."
+            maintenanceMessage: "The application is currently under maintenance. We are working to improve your experience. Your funds are safe. Please check back later.",
+            depositsEnabled: true,
+            withdrawalsEnabled: true,
+            investmentsEnabled: true,
         }
     });
 
@@ -134,20 +140,83 @@ export default function SettingsPage() {
         <div className="space-y-8">
             <header>
                 <h1 className="text-3xl font-bold tracking-tight font-headline">Application Settings</h1>
-                <p className="text-muted-foreground">Manage admin wallets, transaction limits, and maintenance mode.</p>
+                <p className="text-muted-foreground">Manage admin wallets, transaction limits, and feature toggles.</p>
             </header>
 
-            {/* Maintenance Mode */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Maintenance Mode</CardTitle>
-                    <CardDescription>
-                        Enable maintenance mode to show a temporary page to users.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Form {...settingsForm}>
-                        <form onSubmit={settingsForm.handleSubmit(handleSettingsSubmit)} className="space-y-6">
+            <Form {...settingsForm}>
+                <form onSubmit={settingsForm.handleSubmit(handleSettingsSubmit)} className="space-y-8">
+                    {/* Feature Controls */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Feature Controls</CardTitle>
+                            <CardDescription>
+                                Enable or disable core application features globally.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                             <FormField
+                                control={settingsForm.control}
+                                name="depositsEnabled"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                        <div className="space-y-0.5">
+                                            <FormLabel className="text-base">Enable Deposits</FormLabel>
+                                            <FormDescription>
+                                                Allow users to make new deposits.
+                                            </FormDescription>
+                                        </div>
+                                        <FormControl>
+                                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={settingsForm.control}
+                                name="withdrawalsEnabled"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                        <div className="space-y-0.5">
+                                            <FormLabel className="text-base">Enable Withdrawals</FormLabel>
+                                            <FormDescription>
+                                                Allow users to request withdrawals.
+                                            </FormDescription>
+                                        </div>
+                                        <FormControl>
+                                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={settingsForm.control}
+                                name="investmentsEnabled"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                        <div className="space-y-0.5">
+                                            <FormLabel className="text-base">Enable Investments</FormLabel>
+                                            <FormDescription>
+                                                Allow users to purchase new investment plans.
+                                            </FormDescription>
+                                        </div>
+                                        <FormControl>
+                                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                        </CardContent>
+                    </Card>
+                    
+                    {/* Maintenance Mode */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Maintenance Mode</CardTitle>
+                            <CardDescription>
+                                Enable maintenance mode to show a temporary page to users.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
                             <FormField
                                 control={settingsForm.control}
                                 name="maintenanceMode"
@@ -156,14 +225,11 @@ export default function SettingsPage() {
                                         <div className="space-y-0.5">
                                             <FormLabel className="text-base">Enable Maintenance Mode</FormLabel>
                                             <FormDescription>
-                                                If enabled, all users will see the maintenance page.
+                                                If enabled, all non-admin users will see the maintenance page.
                                             </FormDescription>
                                         </div>
                                         <FormControl>
-                                            <Switch
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                            />
+                                            <Switch checked={field.value} onCheckedChange={field.onChange} />
                                         </FormControl>
                                     </FormItem>
                                 )}
@@ -179,6 +245,7 @@ export default function SettingsPage() {
                                                 placeholder="Tell users what's happening..."
                                                 className="resize-none"
                                                 {...field}
+                                                value={field.value ?? ''}
                                             />
                                         </FormControl>
                                         <FormDescription>
@@ -188,77 +255,72 @@ export default function SettingsPage() {
                                     </FormItem>
                                 )}
                             />
-                            <Button type="submit">Save Maintenance Settings</Button>
-                        </form>
-                    </Form>
-                </CardContent>
-            </Card>
+                        </CardContent>
+                    </Card>
 
-            {/* Admin Wallets */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Admin Wallet Details</CardTitle>
-                    <CardDescription>Update the accounts where users will send deposits.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="grid md:grid-cols-2 gap-6">
-                        {/* JazzCash Form */}
-                        <Form {...jazzcashForm}>
-                            <form className="space-y-4 p-4 border rounded-lg">
-                                <h3 className="font-semibold text-lg">JazzCash Account</h3>
-                                <FormField control={jazzcashForm.control} name="accountHolderName" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Account Holder Name</FormLabel>
-                                        <FormControl><Input {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
-                                <FormField control={jazzcashForm.control} name="accountNumber" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Account Number</FormLabel>
-                                        <FormControl><Input {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
-                            </form>
-                        </Form>
+                    {/* Admin Wallets */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Admin Wallet Details</CardTitle>
+                            <CardDescription>Update the accounts where users will send deposits.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="grid md:grid-cols-2 gap-6">
+                                {/* JazzCash Form */}
+                                <Form {...jazzcashForm}>
+                                    <form className="space-y-4 p-4 border rounded-lg">
+                                        <h3 className="font-semibold text-lg">JazzCash Account</h3>
+                                        <FormField control={jazzcashForm.control} name="accountHolderName" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Account Holder Name</FormLabel>
+                                                <FormControl><Input {...field} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField control={jazzcashForm.control} name="accountNumber" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Account Number</FormLabel>
+                                                <FormControl><Input {...field} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                    </form>
+                                </Form>
 
-                        {/* Easypaisa Form */}
-                        <Form {...easypaisaForm}>
-                             <form className="space-y-4 p-4 border rounded-lg">
-                                <h3 className="font-semibold text-lg">Easypaisa Account</h3>
-                                <FormField control={easypaisaForm.control} name="accountHolderName" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Account Holder Name</FormLabel>
-                                        <FormControl><Input {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
-                                <FormField control={easypaisaForm.control} name="accountNumber" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Account Number</FormLabel>
-                                        <FormControl><Input {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
-                            </form>
-                        </Form>
-                    </div>
-                     <Button onClick={handleWalletsSubmit} disabled={jazzcashForm.formState.isSubmitting || easypaisaForm.formState.isSubmitting}>
-                        Save Wallet Details
-                    </Button>
-                </CardContent>
-            </Card>
+                                {/* Easypaisa Form */}
+                                <Form {...easypaisaForm}>
+                                     <form className="space-y-4 p-4 border rounded-lg">
+                                        <h3 className="font-semibold text-lg">Easypaisa Account</h3>
+                                        <FormField control={easypaisaForm.control} name="accountHolderName" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Account Holder Name</FormLabel>
+                                                <FormControl><Input {...field} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField control={easypaisaForm.control} name="accountNumber" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Account Number</FormLabel>
+                                                <FormControl><Input {...field} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                    </form>
+                                </Form>
+                            </div>
+                             <Button onClick={handleWalletsSubmit} disabled={jazzcashForm.formState.isSubmitting || easypaisaForm.formState.isSubmitting}>
+                                Save Wallet Details
+                            </Button>
+                        </CardContent>
+                    </Card>
 
-            {/* Transaction Limits */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Transaction Limits</CardTitle>
-                    <CardDescription>Set the minimum and maximum amounts for deposits and withdrawals.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                     <Form {...settingsForm}>
-                        <form onSubmit={settingsForm.handleSubmit(handleSettingsSubmit)} className="space-y-6">
+                    {/* Transaction Limits */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Transaction Limits</CardTitle>
+                            <CardDescription>Set the minimum and maximum amounts for deposits and withdrawals.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
                            <div className="grid md:grid-cols-2 gap-6">
                              <FormField control={settingsForm.control} name="minDeposit" render={({ field }) => (
                                 <FormItem>
@@ -289,11 +351,13 @@ export default function SettingsPage() {
                                 </FormItem>
                             )} />
                            </div>
-                            <Button type="submit" disabled={settingsForm.formState.isSubmitting}>Save Limits</Button>
-                        </form>
-                    </Form>
-                </CardContent>
-            </Card>
+                        </CardContent>
+                    </Card>
+                    <Button type="submit" size="lg" className="w-full md:w-auto" disabled={settingsForm.formState.isSubmitting}>Save All Settings</Button>
+                </form>
+            </Form>
         </div>
     );
 }
+
+    

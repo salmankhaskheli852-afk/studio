@@ -37,4 +37,9 @@ export type AppSettings = {
     maxWithdrawal: number;
     maintenanceMode: boolean;
     maintenanceMessage: string;
+    depositsEnabled: boolean;
+    withdrawalsEnabled: boolean;
+    investmentsEnabled: boolean;
 }
+
+    

@@ -58,7 +58,7 @@ export function WalletClient() {
   const { data: adminWallets, isLoading: areWalletsLoading } = useCollection<AdminWallet>(adminWalletsQuery);
 
   const appSettingsDocRef = useMemoFirebase(
-      () => firestore ? doc(firestore, 'app_settings', 'transaction_limits') : null,
+      () => firestore ? doc(firestore, 'app_settings', 'global') : null,
       [firestore]
   );
   const { data: appSettings, isLoading: areSettingsLoading } = useDoc<AppSettings>(appSettingsDocRef);
@@ -189,6 +189,9 @@ export function WalletClient() {
     }
   }
 
+  const depositsDisabled = appSettings?.depositsEnabled === false;
+  const withdrawalsDisabled = appSettings?.withdrawalsEnabled === false;
+
   return (
     <div className="space-y-6">
       <header>
@@ -205,7 +208,7 @@ export function WalletClient() {
           <CardContent className="flex justify-center gap-4">
             <Dialog open={isDepositOpen} onOpenChange={setDepositOpen}>
               <DialogTrigger asChild>
-                <Button size="lg" className="flex-1">
+                <Button size="lg" className="flex-1" disabled={depositsDisabled}>
                   <ArrowDownToDot className="mr-2 h-5 w-5" />
                   Deposit
                 </Button>
@@ -292,7 +295,7 @@ export function WalletClient() {
 
             <Dialog open={isWithdrawOpen} onOpenChange={setWithdrawOpen}>
               <DialogTrigger asChild>
-                <Button size="lg" variant="secondary" className="flex-1">
+                <Button size="lg" variant="secondary" className="flex-1" disabled={withdrawalsDisabled}>
                   <ArrowUpFromDot className="mr-2 h-5 w-5" />
                   Withdraw
                 </Button>
@@ -365,3 +368,5 @@ export function WalletClient() {
     </div>
   );
 }
+
+    

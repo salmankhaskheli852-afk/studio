@@ -11,7 +11,7 @@ import { useUser, useDoc, useMemoFirebase, useCollection } from "@/firebase";
 import { collection, doc, updateDoc, arrayUnion, increment, addDoc, serverTimestamp } from "firebase/firestore";
 import { useFirestore } from "@/firebase/provider";
 import { useToast } from "@/hooks/use-toast";
-import type { InvestmentCategory, InvestmentPlan } from "@/lib/data";
+import type { InvestmentCategory, InvestmentPlan, AppSettings } from "@/lib/data";
 
 const planIcons = {
   default: <TrendingUp className="h-8 w-8 text-primary" />,
@@ -46,6 +46,12 @@ export default function InvestPage() {
     [firestore, user]
   );
   const { data: walletData, isLoading: isWalletLoading } = useDoc(walletDocRef);
+
+  const appSettingsDocRef = useMemoFirebase(
+    () => firestore ? doc(firestore, 'app_settings', 'global') : null,
+    [firestore]
+  );
+  const { data: appSettings, isLoading: areSettingsLoading } = useDoc<AppSettings>(appSettingsDocRef);
 
   const handleInvestClick = (plan: InvestmentPlan) => {
     if ((walletData?.balance ?? 0) < plan.minInvest) {
@@ -115,7 +121,8 @@ export default function InvestPage() {
   const totalReturn = selectedPlan ? ((selectedPlan.minInvest * selectedPlan.dailyReturn) / 100) * selectedPlan.period : 0;
   const dailyIncomeForSelected = selectedPlan ? (selectedPlan.minInvest * selectedPlan.dailyReturn) / 100 : 0;
   
-  const isLoading = areCategoriesLoading || arePlansLoading;
+  const isLoading = areCategoriesLoading || arePlansLoading || areSettingsLoading;
+  const investmentsDisabled = appSettings?.investmentsEnabled === false;
 
   return (
     <div className="space-y-6">
@@ -177,7 +184,7 @@ export default function InvestPage() {
                                   </div>
                                 </CardContent>
                                 <CardFooter>
-                                    <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" onClick={() => handleInvestClick(plan)}>Invest Now</Button>
+                                    <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" onClick={() => handleInvestClick(plan)} disabled={investmentsDisabled}>Invest Now</Button>
                                 </CardFooter>
                               </Card>
                             )
@@ -230,3 +237,5 @@ export default function InvestPage() {
     </div>
   );
 }
+
+    
